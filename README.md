@@ -3,7 +3,7 @@
 **OpenShare** is a lightweight, fast, and secure file sharing platform built with simplicity and privacy in mind. Designed for developers, teams, and individuals, it enables seamless file uploads, downloads, and sharing—right from your browser.
 
 🔗 **GitHub Repo:** [github.com/thisisjoyjacob/openshare](https://github.com/thisisjoyjacob/openshare)  
-🌐 **Live Demo:** [openshare.thisisjoyjacob.com](https://openshare.thisisjoyjacob.in)
+🌐 **Live Demo:** [openshare.thisisjoyjacob.in](https://openshare.thisisjoyjacob.in)
 
 ---
 
