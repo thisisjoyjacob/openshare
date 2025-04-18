@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const { parse } = require('querystring');
 
 // Configuration
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
 const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
 const FILE_EXPIRY = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
