@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileShare - Simple File Sharing</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background-color: #f9fafb;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        .drop-zone {
+            border: 2px dashed #cbd5e0;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .drop-zone:hover, .drop-zone.active {
+            border-color: #4f46e5;
+            background-color: rgba(79, 70, 229, 0.05) ;
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        .file-card {
+            transition: all 0.3s ease;
+        }
+        .file-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 80px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -40px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex flex-col">
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-indigo-600">FileShare</h1>
+                <p class="text-sm text-gray-500">Simple, secure file sharing</p>
+            </div>
+        </header>
+
+        <main class="flex-grow">
+            <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                <!-- Upload Section -->
+                <div class="bg-white overflow-hidden shadow rounded-lg mb-6">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h2 class="text-lg font-medium text-gray-900 mb-4">Upload File</h2>
+                        <div id="drop-zone" class="drop-zone p-8 text-center">
+                            <div class="space-y-4">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400"></i>
+                                <p class="text-gray-500">Drag and drop your file here, or click to select</p>
+                                <p class="text-xs text-gray-400">Maximum file size: 1GB • Files auto-delete after 4 hours or download</p>
+                                <button id="select-file-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Select File
+                                </button>
+                                <input type="file" id="file-input" class="hidden">
+                            </div>
+                        </div>
+                        
+                        <!-- Upload Progress -->
+                        <div id="upload-progress-container" class="mt-4 hidden">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-gray-700" id="progress-text">Uploading...</span>
+                                <span class="text-sm font-medium text-gray-700" id="progress-percentage">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="progress-bar" class="progress-bar bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Success Message -->
+                <div id="upload-success" class="bg-green-50 border-l-4 border-green-400 p-4 mb-6 hidden">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-green-700">
+                                File uploaded successfully! Share the link below.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Link Section -->
+                <div id="file-link-container" class="bg-white overflow-hidden shadow rounded-lg mb-6 hidden">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h2 class="text-lg font-medium text-gray-900 mb-4">Share Your File</h2>
+                        <div class="flex">
+                            <input id="file-link" type="text" readonly class="flex-grow focus:ring-indigo-500 focus:border-indigo-500 block w-full rounded-none rounded-l-md sm:text-sm border-gray-300 bg-gray-50" placeholder="File link will appear here">
+                            <button id="copy-link-btn" class="copy-btn inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-r-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <i class="fas fa-copy mr-2"></i> Copy
+                            </button>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">This link will expire in 4 hours or after the first download.</p>
+                    </div>
+                </div>
+
+                <!-- Files Dashboard -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h2 class="text-lg font-medium text-gray-900 mb-4">Your Files</h2>
+                        <div id="files-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <!-- File cards will be dynamically added here -->
+                        </div>
+                        <div id="no-files-message" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-folder-open text-4xl mb-2"></i>
+                            <p>No files uploaded yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-white">
+            <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                <p class="text-center text-sm text-gray-500">
+                    FileShare - Simple file sharing without login. Files auto-delete after 4 hours or download.
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            const selectFileBtn = document.getElementById('select-file-btn');
+            const uploadProgressContainer = document.getElementById('upload-progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercentage = document.getElementById('progress-percentage');
+            const progressText = document.getElementById('progress-text');
+            const uploadSuccess = document.getElementById('upload-success');
+            const fileLinkContainer = document.getElementById('file-link-container');
+            const fileLink = document.getElementById('file-link');
+            const copyLinkBtn = document.getElementById('copy-link-btn');
+            const filesContainer = document.getElementById('files-container');
+            const noFilesMessage = document.getElementById('no-files-message');
+
+            // Event listeners for file selection
+            selectFileBtn.addEventListener('click', () => fileInput.click());
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    uploadFile(e.target.files[0]);
+                }
+            });
+
+            // Drag and drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight() {
+                dropZone.classList.add('active');
+            }
+
+            function unhighlight() {
+                dropZone.classList.remove('active');
+            }
+
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    uploadFile(files[0]);
+                }
+            }
+
+            // File upload function
+            function uploadFile(file) {
+                // Check file size (1GB limit)
+                if (file.size > 1024 * 1024 * 1024) {
+                    alert('File size exceeds the 1GB limit.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Show progress container
+                uploadProgressContainer.classList.remove('hidden');
+                uploadSuccess.classList.add('hidden');
+                fileLinkContainer.classList.add('hidden');
+                
+                // Reset progress
+                progressBar.style.width = '0%';
+                progressPercentage.textContent = '0%';
+                progressText.textContent = `Uploading ${file.name}...`;
+
+                const xhr = new XMLHttpRequest();
+                
+                // Track upload progress
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        progressBar.style.width = percentComplete + '%';
+                        progressPercentage.textContent = percentComplete + '%';
+                    }
+                });
+
+                xhr.addEventListener('load', function() {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        
+                        // Show success message and file link
+                        uploadSuccess.classList.remove('hidden');
+                        fileLinkContainer.classList.remove('hidden');
+                        fileLink.value = response.downloadLink;
+                        
+                        // Update progress
+                        progressText.textContent = 'Upload complete!';
+                        progressBar.style.width = '100%';
+                        progressPercentage.textContent = '100%';
+                        
+                        // Refresh files list
+                        fetchFiles();
+                    } else {
+                        progressText.textContent = 'Upload failed!';
+                        alert('Upload failed: ' + xhr.statusText);
+                    }
+                });
+
+                xhr.addEventListener('error', function() {
+                    progressText.textContent = 'Upload failed!';
+                    alert('Upload failed due to network error.');
+                });
+
+                xhr.open('POST', '/api/upload', true);
+                xhr.send(formData);
+            }
+
+            // Copy link functionality
+            copyLinkBtn.addEventListener('click', () => {
+                fileLink.select();
+                document.execCommand('copy');
+                
+                // Show tooltip
+                const tooltip = document.createElement('span');
+                tooltip.className = 'tooltiptext';
+                tooltip.textContent = 'Copied!';
+                copyLinkBtn.classList.add('tooltip');
+                copyLinkBtn.appendChild(tooltip);
+                
+                // Show the tooltip
+                setTimeout(() => {
+                    tooltip.style.visibility = 'visible';
+                    tooltip.style.opacity = '1';
+                }, 100);
+                
+                // Hide the tooltip after 2 seconds
+                setTimeout(() => {
+                    tooltip.style.opacity = '0';
+                    setTimeout(() => {
+                        copyLinkBtn.removeChild(tooltip);
+                        copyLinkBtn.classList.remove('tooltip');
+                    }, 300);
+                }, 2000);
+            });
+
+            // Fetch and display files
+            function fetchFiles() {
+                fetch('/api/files')
+                    .then(response => response.json())
+                    .then(files => {
+                        filesContainer.innerHTML = '';
+                        
+                        if (files.length === 0) {
+                            noFilesMessage.classList.remove('hidden');
+                        } else {
+                            noFilesMessage.classList.add('hidden');
+                            
+                            files.forEach(file => {
+                                const fileCard = createFileCard(file);
+                                filesContainer.appendChild(fileCard);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching files:', error);
+                    });
+            }
+
+            // Create file card element
+            function createFileCard(file) {
+                const uploadTime = new Date(file.uploadTime);
+                const expiryTime = new Date(file.expiryTime);
+                const now = new Date();
+                
+                // Calculate time remaining
+                const timeRemaining = expiryTime - now;
+                const hoursRemaining = Math.floor(timeRemaining / (1000 * 60 * 60));
+                const minutesRemaining = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                
+                const fileSize = formatFileSize(file.size);
+                
+                const card = document.createElement('div');
+                card.className = 'file-card bg-white overflow-hidden shadow rounded-lg border border-gray-200';
+                card.innerHTML = `
+                    <div class="px-4 py-5 sm:p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-indigo-100 rounded-md p-3">
+                                <i class="fas fa-file text-indigo-600"></i>
+                            </div>
+                            <div class="ml-4 flex-1 truncate">
+                                <h3 class="text-sm font-medium text-gray-900 truncate" title="${file.originalName}">${file.originalName}</h3>
+                                <p class="text-xs text-gray-500">${fileSize}</p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>Expires in:</span>
+                                <span>${hoursRemaining}h ${minutesRemaining}m</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="bg-indigo-600 h-1.5 rounded-full" style="width: ${(timeRemaining / (4 * 60 * 60 * 1000)) * 100}%"></div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a href="${file.downloadLink}" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <i class="fas fa-download mr-2"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                `;
+                
+                return card;
+            }
+
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Initial fetch of files
+            fetchFiles();
+            
+            // Refresh files list every 30 seconds
+            setInterval(fetchFiles, 30000);
+        });
+    </script>
+</body>
+</html>
