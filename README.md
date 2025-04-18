@@ -42,5 +42,4 @@ Access it at: `http://localhost:8080`
 ---
 
 #### 📄 License
-
-Licensed under the [MIT License](LICENSE). Contributions are welcome!
+This project is licensed under the Apache-2.0 License.​
