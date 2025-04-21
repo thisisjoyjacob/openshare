@@ -1,4 +1,4 @@
-// Simple file sharing server with minimal dependencies
+// Enhanced file sharing server with user sessions and additional features
 const http = require('http') ;
 const fs = require('fs');
 const path = require('path');
@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const { parse } = require('querystring');
 
 // Configuration
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
 const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
 const FILE_EXPIRY = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
@@ -16,8 +16,9 @@ if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-// In-memory file database
+// In-memory file database with user sessions
 const fileDatabase = {};
+const userSessions = {};
 
 // MIME types
 const MIME_TYPES = {
@@ -41,6 +42,10 @@ const MIME_TYPES = {
 // Helper functions
 function generateUniqueId() {
   return crypto.randomBytes(16).toString('hex');
+}
+
+function generateSessionId() {
+  return crypto.randomBytes(32).toString('hex');
 }
 
 function getContentType(filePath) {
@@ -70,6 +75,30 @@ function serveStaticFile(res, filePath) {
   });
 }
 
+function getSessionId(req) {
+  // Check for session cookie
+  const cookies = req.headers.cookie || '';
+  const cookiePairs = cookies.split(';');
+  
+  for (const pair of cookiePairs) {
+    const [name, value] = pair.trim().split('=');
+    if (name === 'sessionId') {
+      return value;
+    }
+  }
+  
+  return null;
+}
+
+function createSession() {
+  const sessionId = generateSessionId();
+  userSessions[sessionId] = {
+    created: Date.now(),
+    files: []
+  };
+  return sessionId;
+}
+
 // Cleanup expired files (runs every minute)
 setInterval(() => {
   const now = Date.now();
@@ -84,9 +113,22 @@ setInterval(() => {
         }
         delete fileDatabase[fileId];
         console.log(`Expired file ${metadata.filename} deleted`);
+        
+        // Remove from user session if exists
+        if (metadata.sessionId && userSessions[metadata.sessionId]) {
+          userSessions[metadata.sessionId].files = userSessions[metadata.sessionId].files.filter(id => id !== fileId);
+        }
       } catch (err) {
         console.error(`Error deleting expired file ${metadata.filename}:`, err);
       }
+    }
+  });
+  
+  // Clean up old sessions (older than 24 hours)
+  Object.entries(userSessions).forEach(([sessionId, session]) => {
+    if (now - session.created > 24 * 60 * 60 * 1000 && session.files.length === 0) {
+      delete userSessions[sessionId];
+      console.log(`Expired session ${sessionId} deleted`);
     }
   });
 }, 60000);
@@ -95,7 +137,7 @@ setInterval(() => {
 const server = http.createServer((req, res)  => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   // Handle OPTIONS request for CORS preflight
@@ -107,6 +149,13 @@ const server = http.createServer((req, res)  => {
   
   const url = new URL(req.url, `http://${req.headers.host}`) ;
   const pathname = url.pathname;
+  
+  // Get or create session
+  let sessionId = getSessionId(req);
+  if (!sessionId || !userSessions[sessionId]) {
+    sessionId = createSession();
+    res.setHeader('Set-Cookie', `sessionId=${sessionId}; Path=/; Max-Age=${7*24*60*60}; SameSite=Strict`);
+  }
   
   // Serve static files from public directory
   if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
@@ -126,17 +175,22 @@ const server = http.createServer((req, res)  => {
   
   // API endpoints
   if (pathname === '/api/files' && req.method === 'GET') {
-    // Get all files
-    const files = Object.entries(fileDatabase).map(([id, metadata]) => ({
-      id,
-      originalName: metadata.originalName,
-      size: metadata.size,
-      uploadTime: metadata.uploadTime,
-      expiryTime: metadata.expiryTime,
-      downloadLink: `http://${req.headers.host}/download/${metadata.filename}`
-    }) );
+    // Get all files for current session
+    const sessionFiles = userSessions[sessionId].files
+      .filter(fileId => fileDatabase[fileId]) // Filter out deleted files
+      .map(fileId => {
+        const metadata = fileDatabase[fileId];
+        return {
+          id: fileId,
+          originalName: metadata.originalName,
+          size: metadata.size,
+          uploadTime: metadata.uploadTime,
+          expiryTime: metadata.expiryTime,
+          downloadLink: `http://${req.headers.host}/download/${metadata.filename}`
+        };
+      }) ;
     
-    sendResponse(res, 200, files);
+    sendResponse(res, 200, sessionFiles);
     return;
   }
   
@@ -209,8 +263,12 @@ const server = http.createServer((req, res)  => {
           size: fileContent.length,
           uploadTime: Date.now(),
           expiryTime: Date.now() + FILE_EXPIRY,
-          downloaded: false
+          downloaded: false,
+          sessionId: sessionId
         };
+        
+        // Add to user session
+        userSessions[sessionId].files.push(fileId);
         
         // Return success response
         sendResponse(res, 200, {
@@ -225,6 +283,36 @@ const server = http.createServer((req, res)  => {
       }
     });
     
+    return;
+  }
+  
+  if (pathname === '/api/reset-session' && req.method === 'POST') {
+    // Reset user session - delete all files and create new session
+    if (userSessions[sessionId]) {
+      // Delete all files for this session
+      userSessions[sessionId].files.forEach(fileId => {
+        if (fileDatabase[fileId]) {
+          const filePath = path.join(UPLOAD_DIR, fileDatabase[fileId].filename);
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
+            delete fileDatabase[fileId];
+          } catch (err) {
+            console.error(`Error deleting file ${fileId}:`, err);
+          }
+        }
+      });
+      
+      // Delete session
+      delete userSessions[sessionId];
+    }
+    
+    // Create new session
+    const newSessionId = createSession();
+    res.setHeader('Set-Cookie', `sessionId=${newSessionId}; Path=/; Max-Age=${7*24*60*60}; SameSite=Strict`);
+    
+    sendResponse(res, 200, { message: 'Session reset successfully' });
     return;
   }
   
@@ -255,6 +343,13 @@ const server = http.createServer((req, res)  => {
     res.on('finish', () => {
       try {
         fs.unlinkSync(filePath);
+        
+        // Remove from user session if exists
+        const fileSessionId = fileDatabase[fileId].sessionId;
+        if (fileSessionId && userSessions[fileSessionId]) {
+          userSessions[fileSessionId].files = userSessions[fileSessionId].files.filter(id => id !== fileId);
+        }
+        
         delete fileDatabase[fileId];
         console.log(`File ${filename} deleted after download`);
       } catch (err) {
