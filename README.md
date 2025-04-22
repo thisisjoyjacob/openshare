@@ -37,7 +37,7 @@ cd openshare
 docker-compose up -d
 ```
 
-Access it at: `http://localhost:8080`
+Access it at: `http://localhost:3000`
 
 ---
 
