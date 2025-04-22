@@ -99,6 +99,63 @@ function createSession() {
   return sessionId;
 }
 
+// Parse multipart form data properly for binary files
+function parseMultipartFormData(buffer, boundary) {
+  const result = {
+    fileName: null,
+    fileContent: null
+  };
+  
+  // Convert boundary to buffer for binary comparison
+  const boundaryBuffer = Buffer.from('--' + boundary);
+  const crlfBuffer = Buffer.from('\r\n');
+  const headerEndBuffer = Buffer.from('\r\n\r\n');
+  
+  // Find all boundary positions
+  let boundaryPositions = [];
+  let pos = 0;
+  
+  while (true) {
+    const index = buffer.indexOf(boundaryBuffer, pos);
+    if (index === -1) break;
+    boundaryPositions.push(index);
+    pos = index + boundaryBuffer.length;
+  }
+  
+  // Process each part
+  for (let i = 0; i < boundaryPositions.length - 1; i++) {
+    const partStart = boundaryPositions[i] + boundaryBuffer.length;
+    const partEnd = boundaryPositions[i + 1];
+    const part = buffer.slice(partStart, partEnd);
+    
+    // Check if this part contains a file
+    if (part.includes(Buffer.from('filename='))) {
+      // Find header end position
+      const headerEndPos = part.indexOf(headerEndBuffer);
+      if (headerEndPos === -1) continue;
+      
+      // Extract header as string for parsing
+      const header = part.slice(0, headerEndPos).toString();
+      
+      // Extract filename
+      const filenameMatch = header.match(/filename="([^"]+)"/);
+      if (!filenameMatch) continue;
+      result.fileName = filenameMatch[1];
+      
+      // Extract file content (binary safe)
+      const contentStart = headerEndPos + headerEndBuffer.length;
+      // Content ends before the CRLF that precedes the next boundary
+      const contentEnd = part.length - 2; // -2 for CRLF
+      
+      // Extract binary content
+      result.fileContent = part.slice(contentStart, contentEnd);
+      break; // We found the file part, no need to continue
+    }
+  }
+  
+  return result;
+}
+
 // Cleanup expired files (runs every minute)
 setInterval(() => {
   const now = Date.now();
@@ -196,7 +253,7 @@ const server = http.createServer((req, res)  => {
   
   if (pathname === '/api/upload' && req.method === 'POST') {
     // Handle file upload
-    let body = [];
+    let chunks = [];
     let fileSize = 0;
     
     req.on('data', (chunk) => {
@@ -209,41 +266,28 @@ const server = http.createServer((req, res)  => {
         return;
       }
       
-      body.push(chunk);
+      chunks.push(chunk);
     });
     
     req.on('end', () => {
       try {
-        // Parse multipart form data (simplified version)
-        const bodyBuffer = Buffer.concat(body);
-        const boundary = req.headers['content-type'].split('boundary=')[1];
-        const parts = bodyBuffer.toString().split(`--${boundary}`);
+        // Get the boundary from the content-type header
+        const contentType = req.headers['content-type'] || '';
+        const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
         
-        // Find the file part
-        let fileName = '';
-        let fileContent = null;
-        
-        for (const part of parts) {
-          if (part.includes('filename=')) {
-            // Extract filename
-            const filenameMatch = part.match(/filename="(.+?)"/);
-            if (filenameMatch && filenameMatch[1]) {
-              fileName = filenameMatch[1];
-              
-              // Find the content
-              const contentIndex = part.indexOf('\r\n\r\n');
-              if (contentIndex > -1) {
-                fileContent = part.substring(contentIndex + 4);
-                // Remove trailing boundary
-                fileContent = fileContent.substring(0, fileContent.lastIndexOf('\r\n'));
-                break;
-              }
-            }
-          }
+        if (!boundaryMatch) {
+          sendResponse(res, 400, { error: 'Invalid content type or missing boundary' });
+          return;
         }
         
+        const boundary = boundaryMatch[1] || boundaryMatch[2];
+        const buffer = Buffer.concat(chunks);
+        
+        // Parse multipart form data
+        const { fileName, fileContent } = parseMultipartFormData(buffer, boundary);
+        
         if (!fileName || !fileContent) {
-          sendResponse(res, 400, { error: 'No file uploaded' });
+          sendResponse(res, 400, { error: 'No file uploaded or invalid file data' });
           return;
         }
         
@@ -253,7 +297,7 @@ const server = http.createServer((req, res)  => {
         const uniqueFilename = `${fileId}${fileExtension}`;
         const filePath = path.join(UPLOAD_DIR, uniqueFilename);
         
-        // Save file
+        // Save file (binary safe)
         fs.writeFileSync(filePath, fileContent);
         
         // Store file metadata
