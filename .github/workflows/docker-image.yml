@@ -2,9 +2,9 @@ name: OpenShare CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["*"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["*"]
 
 jobs:
   test:
@@ -16,8 +16,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -31,7 +31,6 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -61,13 +60,13 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: thisisjoyjacob/openshare
+          images: thisisjoyjacob/thisisjoyjacob
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=v2.0
+            type=ref,event=branch,prefix=openshare-
+            type=ref,event=pr,prefix=openshare-
+            type=sha,prefix=openshare-{{branch}}-
+            type=raw,value=openshare-latest,enable={{is_default_branch}}
+            type=raw,value=openshare-v1.0
 
       - name: Build and push
         id: docker_build
