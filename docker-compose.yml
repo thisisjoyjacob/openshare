@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  openshare:
+    build: .
+    ports:
+      - "4001:4001"
+    environment:
+      - NODE_ENV=production
+      - SESSION_SECRET=change-this-in-production-please
+      - LOG_LEVEL=info
+    volumes:
+      - ./uploads:/usr/src/app/uploads
+      - ./logs:/usr/src/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

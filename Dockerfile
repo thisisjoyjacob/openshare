@@ -1,24 +1,38 @@
 FROM node:18-alpine
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Create app directory
 WORKDIR /usr/src/app
 
-# Create directories for the application
-RUN mkdir -p public uploads
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Create necessary directories
+RUN mkdir -p uploads logs public
 
 # Copy application files
-COPY server.js ./
-COPY public/index.html ./public/
-COPY public/manifest.json ./public/
-COPY public/service-worker.js ./public/
-COPY public/icon-192x192.png ./public/
-COPY public/icon-512x512.png ./public/
+COPY src/ ./src/
+COPY public/ ./public/
 
-# Set permissions for uploads directory
-RUN chmod 777 uploads
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S openshare -u 1001
 
-# Expose the port the app runs on
-EXPOSE 3000
+# Set permissions
+RUN chown -R openshare:nodejs /usr/src/app
+USER openshare
 
-# Command to run the application
-CMD ["node", "server.js"]
+# Expose port
+EXPOSE 4001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:4001/health || exit 1
+
+# Start the application
+CMD ["node", "src/server.js"]
