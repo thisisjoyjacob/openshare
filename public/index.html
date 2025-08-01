@@ -112,6 +112,30 @@
             color: white;
         }
         
+        /* Fix link styling for dark theme */
+        a {
+            color: var(--accent-color);
+            transition: color 0.3s ease;
+        }
+        
+        a:hover {
+            color: var(--accent-hover);
+        }
+        
+        /* Fix button hover states */
+        .btn-hover {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+        
         .tooltip {
             position: relative;
             display: inline-block;
@@ -162,10 +186,10 @@
             <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-primary" style="color: var(--accent-color);">OpenShare</h1>
                 <div class="flex items-center space-x-4">
-                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
+                    <button id="theme-toggle" class="p-2 rounded-full btn-hover focus:outline-none">
                         <i id="theme-icon" class="fas fa-moon text-secondary"></i>
                     </button>
-                    <button id="reset-session-btn" class="inline-flex items-center px-3 py-1.5 border border-custom rounded-md text-sm font-medium text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none">
+                    <button id="reset-session-btn" class="inline-flex items-center px-3 py-1.5 border border-custom rounded-md text-sm font-medium text-secondary btn-hover focus:outline-none">
                         <i class="fas fa-redo-alt mr-2"></i> Reset Session
                     </button>
                     <p class="text-sm text-secondary">Simple, secure file sharing</p>
@@ -197,7 +221,7 @@
                                 <span class="text-sm font-medium text-primary" id="progress-text">Uploading...</span>
                                 <span class="text-sm font-medium text-primary" id="progress-percentage">0%</span>
                             </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                            <div class="w-full rounded-full h-2.5" style="background-color: var(--border-color);">
                                 <div id="progress-bar" class="progress-bar accent-custom h-2.5 rounded-full" style="width: 0%"></div>
                             </div>
                         </div>
@@ -223,8 +247,8 @@
                     <div class="px-4 py-5 sm:p-6">
                         <h2 class="text-lg font-medium text-primary mb-4">Share Your File</h2>
                         <div class="flex">
-                            <input id="file-link" type="text" readonly class="flex-grow focus:ring-indigo-500 focus:border-indigo-500 block w-full rounded-none rounded-l-md sm:text-sm border-custom bg-gray-50 dark:bg-gray-700 text-primary" placeholder="File link will appear here">
-                            <button id="copy-link-btn" class="copy-btn inline-flex items-center px-4 py-2 border text-sm font-medium rounded-r-md bg-card hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <input id="file-link" type="text" readonly class="flex-grow focus:ring-indigo-500 focus:border-indigo-500 block w-full rounded-none rounded-l-md sm:text-sm border-custom bg-card text-primary" placeholder="File link will appear here">
+                            <button id="copy-link-btn" class="copy-btn inline-flex items-center px-4 py-2 border text-sm font-medium rounded-r-md bg-card focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                 <i class="fas fa-copy mr-2"></i> Copy
                             </button>
                         </div>
@@ -232,7 +256,7 @@
                         
                         <!-- QR Code Section -->
                         <div class="mt-4">
-                            <button id="show-qr-btn" class="inline-flex items-center px-3 py-2 border border-custom rounded-md text-sm font-medium text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none">
+                            <button id="show-qr-btn" class="inline-flex items-center px-3 py-2 border border-custom rounded-md text-sm font-medium text-secondary btn-hover focus:outline-none">
                                 <i class="fas fa-qrcode mr-2"></i> Show QR Code
                             </button>
                             <div id="qr-code-container" class="qr-code-container mt-4 hidden">
@@ -537,8 +561,8 @@
                 card.innerHTML = `
                     <div class="px-4 py-5 sm:p-6">
                         <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-indigo-100 dark:bg-indigo-900 rounded-md p-3">
-                                <i class="fas fa-file text-indigo-600 dark:text-indigo-400"></i>
+                            <div class="flex-shrink-0 rounded-md p-3" style="background-color: var(--accent-color); opacity: 0.1;">
+                                <i class="fas fa-file" style="color: var(--accent-color);"></i>
                             </div>
                             <div class="ml-4 flex-1 truncate">
                                 <h3 class="text-sm font-medium text-primary truncate" title="${file.originalName}">${file.originalName}</h3>
@@ -550,7 +574,7 @@
                                 <span>Expires in:</span>
                                 <span>${hoursRemaining}h ${minutesRemaining}m</span>
                             </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                            <div class="w-full rounded-full h-1.5" style="background-color: var(--border-color);">
                                 <div class="accent-custom h-1.5 rounded-full" style="width: ${(timeRemaining / (4 * 60 * 60 * 1000)) * 100}%"></div>
                             </div>
                         </div>
@@ -558,7 +582,7 @@
                             <a href="${file.downloadLink}" class="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white accent-custom focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                 <i class="fas fa-download mr-2"></i> Download
                             </a>
-                            <button class="show-qr-btn p-2 border border-custom rounded-md text-secondary hover:bg-gray-100 dark:hover:bg-gray-700" data-url="${file.downloadLink}">
+                            <button class="show-qr-btn p-2 border border-custom rounded-md text-secondary btn-hover" data-url="${file.downloadLink}">
                                 <i class="fas fa-qrcode"></i>
                             </button>
                         </div>
