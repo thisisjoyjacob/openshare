@@ -1,14 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenShare - Simple File Sharing</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- QR Code library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <!-- PWA manifest -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4f46e5">
     <link rel="apple-touch-icon" href="/icon-192x192.png">
@@ -24,8 +22,11 @@
             --success-bg: #ecfdf5;
             --success-border: #10b981;
             --success-text: #047857;
+            --input-bg: #f9fafb;
+            --track-bg: #e5e7eb;
+            --icon-bg: rgba(79, 70, 229, 0.12);
         }
-        
+
         .dark {
             --bg-primary: #111827;
             --bg-secondary: #1f2937;
@@ -37,86 +38,116 @@
             --success-bg: #064e3b;
             --success-border: #10b981;
             --success-text: #ecfdf5;
+            --input-bg: #374151;
+            --track-bg: #374151;
+            --icon-bg: rgba(99, 102, 241, 0.2);
         }
-        
+
         body {
-            background-color: var(--bg-primary) ;
+            background-color: var(--bg-primary);
             color: var(--text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             transition: background-color 0.3s, color 0.3s;
         }
-        
-        .bg-card {
-            background-color: var(--bg-secondary);
-        }
-        
-        .text-primary {
-            color: var(--text-primary);
-        }
-        
-        .text-secondary {
-            color: var(--text-secondary);
-        }
-        
-        .border-custom {
-            border-color: var(--border-color);
-        }
-        
-        .accent-custom {
-            background-color: var(--accent-color);
-        }
-        
-        .accent-custom:hover {
-            background-color: var(--accent-hover);
-        }
-        
+
+        .bg-card { background-color: var(--bg-secondary); }
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .border-custom { border-color: var(--border-color); }
+
+        .accent-custom { background-color: var(--accent-color); }
+        .accent-custom:hover { background-color: var(--accent-hover); }
+
         .success-custom {
             background-color: var(--success-bg);
             border-color: var(--success-border);
             color: var(--success-text);
         }
-        
+
         .drop-zone {
             border: 2px dashed var(--border-color);
             border-radius: 0.5rem;
             transition: all 0.3s ease;
         }
-        
         .drop-zone:hover, .drop-zone.active {
             border-color: var(--accent-color);
             background-color: rgba(79, 70, 229, 0.05);
         }
-        
-        .progress-bar {
-            transition: width 0.3s ease;
-        }
-        
+
+        .progress-bar { transition: width 0.3s ease; }
+        .progress-track { background-color: var(--track-bg); }
+
         .file-card {
             transition: all 0.3s ease;
             background-color: var(--bg-secondary);
             border-color: var(--border-color);
         }
-        
         .file-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
         }
-        
+
+        /* Icon container in file cards */
+        .file-icon-bg {
+            background-color: var(--icon-bg);
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            flex-shrink: 0;
+        }
+        .file-icon-color { color: var(--accent-color); }
+
+        /* Buttons */
+        .btn-hover {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+        .btn-hover:hover {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .btn-icon {
+            color: var(--text-secondary);
+            transition: background-color 0.2s;
+        }
+        .btn-icon:hover { background-color: var(--border-color); }
+
         .copy-btn {
             transition: all 0.2s ease;
             border-color: var(--border-color);
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
         }
-        
         .copy-btn:hover {
             background-color: var(--accent-color);
             color: white;
         }
-        
-        .tooltip {
-            position: relative;
-            display: inline-block;
+
+        /* Input */
+        .input-custom {
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            transition: border-color 0.2s, background-color 0.3s;
         }
-        
+        .input-custom:focus { outline: none; border-color: var(--accent-color); }
+
+        /* QR code always needs white bg for readability */
+        .qr-code-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+        .qr-code-container.hidden { display: none; }
+
+        .tooltip { position: relative; display: inline-block; }
         .tooltip .tooltiptext {
             visibility: hidden;
             width: 80px;
@@ -133,7 +164,6 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        
         .tooltip .tooltiptext::after {
             content: "";
             position: absolute;
@@ -144,62 +174,71 @@
             border-style: solid;
             border-color: #555 transparent transparent transparent;
         }
-        
-        .qr-code-container {
+
+        /* Upload queue */
+        .queue-item {
             display: flex;
-            justify-content: center;
             align-items: center;
-            padding: 1rem;
-            background-color: white;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
         }
+        .queue-item:last-child { border-bottom: none; }
+        .queue-status { font-size: 0.75rem; }
+        .queue-status.done { color: #10b981; }
+        .queue-status.uploading { color: var(--accent-color); }
+        .queue-status.error { color: #ef4444; }
     </style>
 </head>
 <body>
     <div class="min-h-screen flex flex-col">
         <header class="bg-card shadow">
             <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-primary" style="color: var(--accent-color);">OpenShare</h1>
+                <h1 class="text-2xl font-bold" style="color: var(--accent-color);">OpenShare</h1>
                 <div class="flex items-center space-x-4">
-                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
+                    <button id="theme-toggle" class="btn-icon p-2 rounded-full focus:outline-none">
                         <i id="theme-icon" class="fas fa-moon text-secondary"></i>
                     </button>
-                    <button id="reset-session-btn" class="inline-flex items-center px-3 py-1.5 border border-custom rounded-md text-sm font-medium text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none">
+                    <button id="reset-session-btn" class="btn-hover inline-flex items-center px-3 py-1.5 border rounded-md text-sm font-medium focus:outline-none">
                         <i class="fas fa-redo-alt mr-2"></i> Reset Session
                     </button>
-                    <p class="text-sm text-secondary">Simple, secure file sharing</p>
+                    <p class="text-sm text-secondary hidden sm:block">Simple, secure file sharing</p>
                 </div>
             </div>
         </header>
 
         <main class="flex-grow">
             <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+
                 <!-- Upload Section -->
                 <div class="bg-card overflow-hidden shadow rounded-lg mb-6">
                     <div class="px-4 py-5 sm:p-6">
-                        <h2 class="text-lg font-medium text-primary mb-4">Upload File</h2>
-                        <div id="drop-zone" class="drop-zone p-8 text-center">
+                        <h2 class="text-lg font-medium text-primary mb-4">Upload Files</h2>
+                        <div id="drop-zone" class="drop-zone p-8 text-center cursor-pointer">
                             <div class="space-y-4">
                                 <i class="fas fa-cloud-upload-alt text-4xl text-secondary"></i>
-                                <p class="text-secondary">Drag and drop your file here, or click to select</p>
-                                <p class="text-xs text-secondary">Maximum file size: 1GB • Files auto-delete after 4 hours or download</p>
+                                <p class="text-secondary">Drag and drop files here, or click to select</p>
+                                <p class="text-xs text-secondary">Up to 1GB per file • Auto-delete after 4 hours or first download • Multiple files supported</p>
                                 <button id="select-file-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white accent-custom focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                    Select File
+                                    Select Files
                                 </button>
-                                <input type="file" id="file-input" class="hidden">
+                                <input type="file" id="file-input" class="hidden" multiple>
                             </div>
                         </div>
-                        
+
                         <!-- Upload Progress -->
                         <div id="upload-progress-container" class="mt-4 hidden">
                             <div class="flex justify-between mb-1">
                                 <span class="text-sm font-medium text-primary" id="progress-text">Uploading...</span>
                                 <span class="text-sm font-medium text-primary" id="progress-percentage">0%</span>
                             </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                            <div class="progress-track w-full rounded-full h-2.5">
                                 <div id="progress-bar" class="progress-bar accent-custom h-2.5 rounded-full" style="width: 0%"></div>
                             </div>
+                            <!-- Queue list -->
+                            <div id="upload-queue" class="mt-3 hidden"></div>
                         </div>
                     </div>
                 </div>
@@ -211,31 +250,31 @@
                             <i class="fas fa-check-circle"></i>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm">
-                                File uploaded successfully! Share the link below.
-                            </p>
+                            <p class="text-sm" id="upload-success-text">File uploaded successfully! Share the link below.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- File Link Section -->
+                <!-- File Link Section (last uploaded) -->
                 <div id="file-link-container" class="bg-card overflow-hidden shadow rounded-lg mb-6 hidden">
                     <div class="px-4 py-5 sm:p-6">
                         <h2 class="text-lg font-medium text-primary mb-4">Share Your File</h2>
                         <div class="flex">
-                            <input id="file-link" type="text" readonly class="flex-grow focus:ring-indigo-500 focus:border-indigo-500 block w-full rounded-none rounded-l-md sm:text-sm border-custom bg-gray-50 dark:bg-gray-700 text-primary" placeholder="File link will appear here">
-                            <button id="copy-link-btn" class="copy-btn inline-flex items-center px-4 py-2 border text-sm font-medium rounded-r-md bg-card hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <input id="file-link" type="text" readonly
+                                class="input-custom flex-grow block w-full rounded-none rounded-l-md sm:text-sm px-3 py-2"
+                                placeholder="File link will appear here">
+                            <button id="copy-link-btn" class="copy-btn inline-flex items-center px-4 py-2 border text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                 <i class="fas fa-copy mr-2"></i> Copy
                             </button>
                         </div>
-                        <p class="mt-2 text-sm text-secondary">This link will expire in 4 hours or after the first download.</p>
-                        
-                        <!-- QR Code Section -->
+                        <p class="mt-2 text-sm text-secondary">This link expires in 4 hours or after the first download.</p>
+
+                        <!-- QR Code -->
                         <div class="mt-4">
-                            <button id="show-qr-btn" class="inline-flex items-center px-3 py-2 border border-custom rounded-md text-sm font-medium text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none">
+                            <button id="show-qr-btn" class="btn-hover inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium focus:outline-none">
                                 <i class="fas fa-qrcode mr-2"></i> Show QR Code
                             </button>
-                            <div id="qr-code-container" class="qr-code-container mt-4 hidden">
+                            <div id="qr-code-container" class="qr-code-container hidden">
                                 <div id="qr-code"></div>
                             </div>
                         </div>
@@ -246,9 +285,7 @@
                 <div class="bg-card overflow-hidden shadow rounded-lg">
                     <div class="px-4 py-5 sm:p-6">
                         <h2 class="text-lg font-medium text-primary mb-4">Your Files</h2>
-                        <div id="files-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            <!-- File cards will be dynamically added here -->
-                        </div>
+                        <div id="files-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
                         <div id="no-files-message" class="text-center py-8 text-secondary">
                             <i class="fas fa-folder-open text-4xl mb-2"></i>
                             <p>No files uploaded yet</p>
@@ -261,362 +298,300 @@
         <footer class="bg-card">
             <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
                 <p class="text-center text-sm text-secondary">
-                    OpenShare - Simple file sharing without login. Files auto-delete after 4 hours or download.
+                    OpenShare — Simple file sharing without login. Files auto-delete after 4 hours or first download.
                 </p>
             </div>
         </footer>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // DOM Elements
-            const dropZone = document.getElementById('drop-zone');
-            const fileInput = document.getElementById('file-input');
-            const selectFileBtn = document.getElementById('select-file-btn');
-            const uploadProgressContainer = document.getElementById('upload-progress-container');
-            const progressBar = document.getElementById('progress-bar');
-            const progressPercentage = document.getElementById('progress-percentage');
-            const progressText = document.getElementById('progress-text');
-            const uploadSuccess = document.getElementById('upload-success');
-            const fileLinkContainer = document.getElementById('file-link-container');
-            const fileLink = document.getElementById('file-link');
-            const copyLinkBtn = document.getElementById('copy-link-btn');
-            const filesContainer = document.getElementById('files-container');
-            const noFilesMessage = document.getElementById('no-files-message');
-            const themeToggle = document.getElementById('theme-toggle');
-            const themeIcon = document.getElementById('theme-icon');
-            const resetSessionBtn = document.getElementById('reset-session-btn');
-            const showQrBtn = document.getElementById('show-qr-btn');
-            const qrCodeContainer = document.getElementById('qr-code-container');
-            const qrCode = document.getElementById('qr-code');
-            
-            // Theme management
-            function setTheme(isDark) {
-                if (isDark) {
-                    document.documentElement.classList.add('dark');
-                    themeIcon.classList.remove('fa-moon');
-                    themeIcon.classList.add('fa-sun');
-                    localStorage.setItem('theme', 'dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    themeIcon.classList.remove('fa-sun');
-                    themeIcon.classList.add('fa-moon');
-                    localStorage.setItem('theme', 'light');
-                }
-            }
-            
-            // Check for saved theme preference or prefer-color-scheme
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                setTheme(true);
-            }
-            
-            // Theme toggle event
-            themeToggle.addEventListener('click', () => {
-                const isDark = document.documentElement.classList.contains('dark');
-                setTheme(!isDark);
-            });
-            
-            // Reset session event
-            resetSessionBtn.addEventListener('click', () => {
-                if (confirm('Are you sure you want to reset your session? All your uploaded files will be deleted.')) {
-                    fetch('/api/reset-session', {
-                        method: 'POST'
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Clear UI
-                        filesContainer.innerHTML = '';
-                        noFilesMessage.classList.remove('hidden');
-                        uploadSuccess.classList.add('hidden');
-                        fileLinkContainer.classList.add('hidden');
-                        
-                        alert('Session reset successfully. All your files have been deleted.');
-                    })
-                    .catch(error => {
-                        console.error('Error resetting session:', error);
-                        alert('Failed to reset session. Please try again.');
-                    });
-                }
-            });
-            
-            // QR Code generation
-            showQrBtn.addEventListener('click', () => {
-                const url = fileLink.value;
-                if (url) {
-                    qrCodeContainer.classList.toggle('hidden');
-                    if (!qrCodeContainer.classList.contains('hidden')) {
-                        // Clear previous QR code
-                        qrCode.innerHTML = '';
-                        // Generate new QR code
-                        QRCode.toCanvas(qrCode, url, { width: 200 }, function (error) {
-                            if (error) console.error(error);
-                        });
-                    }
-                }
-            });
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const selectFileBtn = document.getElementById('select-file-btn');
+        const uploadProgressContainer = document.getElementById('upload-progress-container');
+        const uploadQueue = document.getElementById('upload-queue');
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercentage = document.getElementById('progress-percentage');
+        const progressText = document.getElementById('progress-text');
+        const uploadSuccess = document.getElementById('upload-success');
+        const uploadSuccessText = document.getElementById('upload-success-text');
+        const fileLinkContainer = document.getElementById('file-link-container');
+        const fileLink = document.getElementById('file-link');
+        const copyLinkBtn = document.getElementById('copy-link-btn');
+        const filesContainer = document.getElementById('files-container');
+        const noFilesMessage = document.getElementById('no-files-message');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const resetSessionBtn = document.getElementById('reset-session-btn');
+        const showQrBtn = document.getElementById('show-qr-btn');
+        const qrCodeContainer = document.getElementById('qr-code-container');
+        const qrCodeEl = document.getElementById('qr-code');
 
-            // Event listeners for file selection
-            selectFileBtn.addEventListener('click', () => fileInput.click());
-            
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    uploadFile(e.target.files[0]);
-                }
-            });
+        // ── Theme ────────────────────────────────────────────────────────
+        function setTheme(isDark) {
+            // Toggle class on <html> — no leftover "light" class
+            document.documentElement.className = isDark ? 'dark' : '';
+            themeIcon.className = isDark ? 'fas fa-sun text-secondary' : 'fas fa-moon text-secondary';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
 
-            // Drag and drop functionality
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, preventDefaults, false);
-            });
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(savedTheme === 'dark' || (!savedTheme && prefersDark));
 
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
+        themeToggle.addEventListener('click', () => {
+            setTheme(!document.documentElement.classList.contains('dark'));
+        });
 
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, highlight, false);
-            });
+        // ── Reset session ────────────────────────────────────────────────
+        resetSessionBtn.addEventListener('click', () => {
+            if (!confirm('Reset session? All your uploaded files will be deleted.')) return;
+            fetch('/api/reset-session', { method: 'POST' })
+                .then(r => r.json())
+                .then(() => {
+                    filesContainer.innerHTML = '';
+                    noFilesMessage.classList.remove('hidden');
+                    uploadSuccess.classList.add('hidden');
+                    fileLinkContainer.classList.add('hidden');
+                    alert('Session reset. All files deleted.');
+                })
+                .catch(() => alert('Failed to reset session.'));
+        });
 
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, unhighlight, false);
-            });
-
-            function highlight() {
-                dropZone.classList.add('active');
-            }
-
-            function unhighlight() {
-                dropZone.classList.remove('active');
-            }
-
-            dropZone.addEventListener('drop', handleDrop, false);
-
-            function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                
-                if (files.length > 0) {
-                    uploadFile(files[0]);
-                }
-            }
-
-            // File upload function
-            function uploadFile(file) {
-                // Check file size (1GB limit)
-                if (file.size > 1024 * 1024 * 1024) {
-                    alert('File size exceeds the 1GB limit.');
-                    return;
-                }
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                // Show progress container
-                uploadProgressContainer.classList.remove('hidden');
-                uploadSuccess.classList.add('hidden');
-                fileLinkContainer.classList.add('hidden');
-                qrCodeContainer.classList.add('hidden');
-                
-                // Reset progress
-                progressBar.style.width = '0%';
-                progressPercentage.textContent = '0%';
-                progressText.textContent = `Uploading ${file.name}...`;
-
-                const xhr = new XMLHttpRequest();
-                
-                // Track upload progress
-                xhr.upload.addEventListener('progress', (event) => {
-                    if (event.lengthComputable) {
-                        const percentComplete = Math.round((event.loaded / event.total) * 100);
-                        progressBar.style.width = percentComplete + '%';
-                        progressPercentage.textContent = percentComplete + '%';
-                    }
-                });
-
-                xhr.addEventListener('load', function() {
-                    if (xhr.status === 200) {
-                        const response = JSON.parse(xhr.responseText);
-                        
-                        // Show success message and file link
-                        uploadSuccess.classList.remove('hidden');
-                        fileLinkContainer.classList.remove('hidden');
-                        fileLink.value = response.downloadLink;
-                        
-                        // Update progress
-                        progressText.textContent = 'Upload complete!';
-                        progressBar.style.width = '100%';
-                        progressPercentage.textContent = '100%';
-                        
-                        // Refresh files list
-                        fetchFiles();
-                    } else {
-                        progressText.textContent = 'Upload failed!';
-                        alert('Upload failed: ' + xhr.statusText);
-                    }
-                });
-
-                xhr.addEventListener('error', function() {
-                    progressText.textContent = 'Upload failed!';
-                    alert('Upload failed due to network error.');
-                });
-
-                xhr.open('POST', '/api/upload', true);
-                xhr.send(formData);
-            }
-
-            // Copy link functionality
-            copyLinkBtn.addEventListener('click', () => {
-                fileLink.select();
-                document.execCommand('copy');
-                
-                // Show tooltip
-                const tooltip = document.createElement('span');
-                tooltip.className = 'tooltiptext';
-                tooltip.textContent = 'Copied!';
-                copyLinkBtn.classList.add('tooltip');
-                copyLinkBtn.appendChild(tooltip);
-                
-                // Show the tooltip
-                setTimeout(() => {
-                    tooltip.style.visibility = 'visible';
-                    tooltip.style.opacity = '1';
-                }, 100);
-                
-                // Hide the tooltip after 2 seconds
-                setTimeout(() => {
-                    tooltip.style.opacity = '0';
-                    setTimeout(() => {
-                        copyLinkBtn.removeChild(tooltip);
-                        copyLinkBtn.classList.remove('tooltip');
-                    }, 300);
-                }, 2000);
-            });
-
-            // Fetch and display files
-            function fetchFiles() {
-                fetch('/api/files')
-                    .then(response => response.json())
-                    .then(files => {
-                        filesContainer.innerHTML = '';
-                        
-                        if (files.length === 0) {
-                            noFilesMessage.classList.remove('hidden');
-                        } else {
-                            noFilesMessage.classList.add('hidden');
-                            
-                            files.forEach(file => {
-                                const fileCard = createFileCard(file);
-                                filesContainer.appendChild(fileCard);
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching files:', error);
-                    });
-            }
-
-            // Create file card element
-            function createFileCard(file) {
-                const uploadTime = new Date(file.uploadTime);
-                const expiryTime = new Date(file.expiryTime);
-                const now = new Date();
-                
-                // Calculate time remaining
-                const timeRemaining = expiryTime - now;
-                const hoursRemaining = Math.floor(timeRemaining / (1000 * 60 * 60));
-                const minutesRemaining = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                
-                const fileSize = formatFileSize(file.size);
-                
-                const card = document.createElement('div');
-                card.className = 'file-card overflow-hidden shadow rounded-lg border';
-                card.innerHTML = `
-                    <div class="px-4 py-5 sm:p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-indigo-100 dark:bg-indigo-900 rounded-md p-3">
-                                <i class="fas fa-file text-indigo-600 dark:text-indigo-400"></i>
-                            </div>
-                            <div class="ml-4 flex-1 truncate">
-                                <h3 class="text-sm font-medium text-primary truncate" title="${file.originalName}">${file.originalName}</h3>
-                                <p class="text-xs text-secondary">${fileSize}</p>
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <div class="flex justify-between text-xs text-secondary mb-1">
-                                <span>Expires in:</span>
-                                <span>${hoursRemaining}h ${minutesRemaining}m</span>
-                            </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                                <div class="accent-custom h-1.5 rounded-full" style="width: ${(timeRemaining / (4 * 60 * 60 * 1000)) * 100}%"></div>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex space-x-2">
-                            <a href="${file.downloadLink}" class="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white accent-custom focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                <i class="fas fa-download mr-2"></i> Download
-                            </a>
-                            <button class="show-qr-btn p-2 border border-custom rounded-md text-secondary hover:bg-gray-100 dark:hover:bg-gray-700" data-url="${file.downloadLink}">
-                                <i class="fas fa-qrcode"></i>
-                            </button>
-                        </div>
-                        <div class="qr-code-preview mt-3 hidden"></div>
-                    </div>
-                `;
-                
-                // Add event listener for QR code button in card
-                setTimeout(() => {
-                    const qrButton = card.querySelector('.show-qr-btn');
-                    const qrPreview = card.querySelector('.qr-code-preview');
-                    
-                    qrButton.addEventListener('click', () => {
-                        const url = qrButton.getAttribute('data-url');
-                        qrPreview.classList.toggle('hidden');
-                        
-                        if (!qrPreview.classList.contains('hidden') && qrPreview.innerHTML === '') {
-                            QRCode.toCanvas(document.createElement('canvas'), url, { width: 128 }, function (error, canvas) {
-                                if (error) console.error(error);
-                                qrPreview.appendChild(canvas);
-                            });
-                        }
-                    });
-                }, 0);
-                
-                return card;
-            }
-
-            // Format file size
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-
-            // Initial fetch of files
-            fetchFiles();
-            
-            // Refresh files list every 30 seconds
-            setInterval(fetchFiles, 30000);
-            
-            // Register service worker for PWA
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/service-worker.js')
-                        .then(registration => {
-                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                        })
-                        .catch(error => {
-                            console.log('ServiceWorker registration failed: ', error);
-                        });
-                });
+        // ── QR code (last-uploaded link) ─────────────────────────────────
+        showQrBtn.addEventListener('click', () => {
+            const url = fileLink.value;
+            if (!url) return;
+            qrCodeContainer.classList.toggle('hidden');
+            if (!qrCodeContainer.classList.contains('hidden')) {
+                qrCodeEl.innerHTML = '';
+                QRCode.toCanvas(qrCodeEl, url, { width: 200 }, err => { if (err) console.error(err); });
             }
         });
+
+        // ── File selection / drag-drop ───────────────────────────────────
+        selectFileBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', e => {
+            if (e.target.files.length > 0) uploadFiles(Array.from(e.target.files));
+        });
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
+            dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
+
+        ['dragenter', 'dragover'].forEach(ev =>
+            dropZone.addEventListener(ev, () => dropZone.classList.add('active')));
+        ['dragleave', 'drop'].forEach(ev =>
+            dropZone.addEventListener(ev, () => dropZone.classList.remove('active')));
+
+        dropZone.addEventListener('drop', e => {
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 0) uploadFiles(files);
+        });
+
+        // ── Upload queue (sequential) ────────────────────────────────────
+        async function uploadFiles(files) {
+            const tooBig = files.filter(f => f.size > 1024 * 1024 * 1024);
+            if (tooBig.length) {
+                alert(`${tooBig.map(f => f.name).join(', ')} exceed the 1 GB limit and will be skipped.`);
+                files = files.filter(f => f.size <= 1024 * 1024 * 1024);
+            }
+            if (!files.length) return;
+
+            uploadProgressContainer.classList.remove('hidden');
+            uploadSuccess.classList.add('hidden');
+            fileLinkContainer.classList.add('hidden');
+            qrCodeContainer.classList.add('hidden');
+
+            // Build queue UI for multiple files
+            if (files.length > 1) {
+                uploadQueue.classList.remove('hidden');
+                uploadQueue.innerHTML = files.map((f, i) =>
+                    `<div class="queue-item" id="qi-${i}">
+                        <span class="truncate mr-2">${f.name}</span>
+                        <span class="queue-status" id="qs-${i}">Waiting</span>
+                    </div>`
+                ).join('');
+            } else {
+                uploadQueue.classList.add('hidden');
+            }
+
+            let lastLink = null;
+            let successCount = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (files.length > 1) {
+                    document.getElementById(`qs-${i}`).textContent = 'Uploading…';
+                    document.getElementById(`qs-${i}`).className = 'queue-status uploading';
+                }
+
+                progressText.textContent = `Uploading ${file.name}…`;
+                progressBar.style.width = '0%';
+                progressPercentage.textContent = '0%';
+
+                try {
+                    const link = await uploadSingle(file, (pct) => {
+                        progressBar.style.width = pct + '%';
+                        progressPercentage.textContent = pct + '%';
+                    });
+                    lastLink = link;
+                    successCount++;
+                    if (files.length > 1) {
+                        document.getElementById(`qs-${i}`).textContent = '✓ Done';
+                        document.getElementById(`qs-${i}`).className = 'queue-status done';
+                    }
+                } catch (err) {
+                    if (files.length > 1) {
+                        document.getElementById(`qs-${i}`).textContent = '✗ Failed';
+                        document.getElementById(`qs-${i}`).className = 'queue-status error';
+                    }
+                    console.error('Upload failed:', err);
+                }
+            }
+
+            progressText.textContent = successCount === files.length ? 'All uploads complete!' : `${successCount}/${files.length} uploaded`;
+            progressBar.style.width = '100%';
+            progressPercentage.textContent = '100%';
+
+            if (lastLink) {
+                uploadSuccessText.textContent = files.length > 1
+                    ? `${successCount} file(s) uploaded. Showing last share link.`
+                    : 'File uploaded successfully! Share the link below.';
+                uploadSuccess.classList.remove('hidden');
+                fileLinkContainer.classList.remove('hidden');
+                fileLink.value = lastLink;
+            }
+
+            fetchFiles();
+            fileInput.value = ''; // allow re-selecting same file
+        }
+
+        function uploadSingle(file, onProgress) {
+            return new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                const xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', e => {
+                    if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+                });
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 200) {
+                        resolve(JSON.parse(xhr.responseText).downloadLink);
+                    } else {
+                        reject(new Error(xhr.statusText));
+                    }
+                });
+                xhr.addEventListener('error', () => reject(new Error('Network error')));
+                xhr.open('POST', '/api/upload', true);
+                xhr.send(formData);
+            });
+        }
+
+        // ── Copy link ────────────────────────────────────────────────────
+        copyLinkBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(fileLink.value).catch(() => {
+                fileLink.select();
+                document.execCommand('copy');
+            });
+            const orig = copyLinkBtn.innerHTML;
+            copyLinkBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Copied!';
+            setTimeout(() => { copyLinkBtn.innerHTML = orig; }, 2000);
+        });
+
+        // ── File list ────────────────────────────────────────────────────
+        function fetchFiles() {
+            fetch('/api/files')
+                .then(r => r.json())
+                .then(files => {
+                    filesContainer.innerHTML = '';
+                    if (files.length === 0) {
+                        noFilesMessage.classList.remove('hidden');
+                    } else {
+                        noFilesMessage.classList.add('hidden');
+                        files.forEach(f => filesContainer.appendChild(createFileCard(f)));
+                    }
+                })
+                .catch(err => console.error('Error fetching files:', err));
+        }
+
+        function createFileCard(file) {
+            const now = Date.now();
+            const remaining = file.expiryTime - now;
+            const h = Math.max(0, Math.floor(remaining / 3_600_000));
+            const m = Math.max(0, Math.floor((remaining % 3_600_000) / 60_000));
+            const pct = Math.min(100, Math.max(0, (remaining / (4 * 3_600_000)) * 100));
+
+            const card = document.createElement('div');
+            card.className = 'file-card overflow-hidden shadow rounded-lg border';
+            card.innerHTML = `
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex items-center">
+                        <div class="file-icon-bg">
+                            <i class="fas fa-file file-icon-color"></i>
+                        </div>
+                        <div class="ml-4 flex-1 min-w-0">
+                            <h3 class="text-sm font-medium text-primary truncate" title="${escHtml(file.originalName)}">${escHtml(file.originalName)}</h3>
+                            <p class="text-xs text-secondary">${formatSize(file.size)}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs text-secondary mb-1">
+                            <span>Expires in:</span>
+                            <span>${h}h ${m}m</span>
+                        </div>
+                        <div class="progress-track w-full rounded-full h-1.5">
+                            <div class="accent-custom h-1.5 rounded-full" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex space-x-2">
+                        <a href="${file.downloadLink}" class="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white accent-custom focus:outline-none">
+                            <i class="fas fa-download mr-2"></i> Download
+                        </a>
+                        <button class="show-qr-btn btn-hover p-2 border rounded-md" data-url="${file.downloadLink}" title="Show QR code">
+                            <i class="fas fa-qrcode"></i>
+                        </button>
+                    </div>
+                    <div class="qr-code-preview hidden"></div>
+                </div>`;
+
+            card.querySelector('.show-qr-btn').addEventListener('click', function () {
+                const preview = card.querySelector('.qr-code-preview');
+                preview.classList.toggle('hidden');
+                if (!preview.classList.contains('hidden') && !preview.firstChild) {
+                    preview.style.cssText = 'display:flex;justify-content:center;padding:0.75rem;background:white;border-radius:0.5rem;margin-top:0.75rem;';
+                    QRCode.toCanvas(document.createElement('canvas'), this.dataset.url, { width: 128 }, (err, canvas) => {
+                        if (!err) preview.appendChild(canvas);
+                    });
+                }
+            });
+
+            return card;
+        }
+
+        function escHtml(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function formatSize(bytes) {
+            if (!bytes) return '0 B';
+            const units = ['B','KB','MB','GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
+        }
+
+        // Initial load + auto-refresh
+        fetchFiles();
+        setInterval(fetchFiles, 30000);
+
+        // PWA service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+            });
+        }
+    });
     </script>
 </body>
 </html>
