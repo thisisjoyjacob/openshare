@@ -5,20 +5,6 @@ Review mode: HOLD SCOPE (Approach A — Targeted Fix).
 
 ---
 
-## P1 — Security
-
-### [TODO-1] Null-byte path traversal bypass in /download handler
-**What:** Strip null bytes from filenames before calling `path.resolve()` in the `/download/` handler.
-**Why:** A filename like `file%00.txt` (URL-decoded to `file\0.txt`) can bypass the `startsWith(safeDir)` prefix check on some systems. The plan's `path.resolve()` fix stops `%2e%2e` traversal but not null-byte injection.
-**Pros:** One-line fix (`filename.replace(/\0/g, '')`); closes a real traversal vector.
-**Cons:** None — no tradeoffs.
-**Context:** Raised as a cross-model tension during CEO review (outside voice vs. review finding). Apply immediately before `path.resolve(UPLOAD_DIR, filename)` in the download handler.
-**Effort:** S (human: ~5min / CC: ~1min)
-**Priority:** P1
-**Depends on:** Patch 5 (path traversal fix) from the design doc — apply alongside it.
-
----
-
 ## P2 — Security / Reliability
 
 ### [TODO-2] Symlink escape is a NEW problem introduced by the persistence patch
@@ -68,6 +54,8 @@ Review mode: HOLD SCOPE (Approach A — Targeted Fix).
 
 ## P3 — Reliability
 
+---
+
 ### [TODO-5] Disk space exhaustion — no pre-upload guard
 **What:** Check available disk space before accepting an upload; reject with HTTP 507 if below a configurable threshold.
 **Why:** A large upload can fill the disk entirely, crashing the server or partially writing a file that corrupts `.metadata.json`. There is no guard today.
@@ -77,3 +65,10 @@ Review mode: HOLD SCOPE (Approach A — Targeted Fix).
 **Effort:** M (human: ~2h / CC: ~10min)
 **Priority:** P3
 **Depends on:** Approach B decision.
+
+---
+
+## Completed
+
+### [TODO-1] Null-byte path traversal bypass in /download handler
+**Completed:** (2026-03-23) — Implemented in `fix: adversarial review security fixes (download handler)`. Null bytes are now stripped BEFORE the dot-prefix guard (corrected ordering from original implementation where stripping happened after the check, allowing `\0.metadata.json` to bypass).
