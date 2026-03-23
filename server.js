@@ -413,14 +413,15 @@ const server = http.createServer((req, res)  => {
     // Handle file download
     const rawFilename = pathname.substring('/download/'.length);
 
+    // Strip null bytes FIRST (must precede dot-prefix check — \0.metadata.json would
+    // otherwise bypass the guard and resolve to .metadata.json after stripping)
+    const filename = rawFilename.replace(/\0/g, '');
+
     // Dot-file guard: reject .metadata.json and any other dot-prefixed filename
-    if (rawFilename.startsWith('.')) {
+    if (filename.startsWith('.')) {
       sendResponse(res, 403, { error: 'Forbidden' });
       return;
     }
-
-    // Strip null bytes before path resolution (guards against %00 bypass)
-    const filename = rawFilename.replace(/\0/g, '');
 
     // Path traversal guard: resolved path must stay inside UPLOAD_DIR
     const safeDir = path.resolve(UPLOAD_DIR) + path.sep;
@@ -433,18 +434,28 @@ const server = http.createServer((req, res)  => {
     const fileId = path.basename(filename, path.extname(filename));
     const filePath = resolvedPath;
 
-    // Check if file exists
-    if (!fs.existsSync(filePath) || !fileDatabase[fileId]) {
+    if (!fileDatabase[fileId]) {
       sendResponse(res, 404, { error: 'File not found or expired' });
       return;
     }
 
+    // Sanitize originalName for Content-Disposition (strip chars that break header syntax)
+    const safeOriginalName = fileDatabase[fileId].originalName.replace(/["\\\r\n]/g, '_');
+
     // Set headers for download
-    res.setHeader('Content-Disposition', `attachment; filename="${fileDatabase[fileId].originalName}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeOriginalName}"`);
     res.setHeader('Content-Type', getContentType(filePath));
 
-    // Stream the file
+    // Stream the file — error handler prevents unhandled-error process crash
     const fileStream = fs.createReadStream(filePath);
+    fileStream.on('error', (err) => {
+      console.error(`Error reading file ${filename}:`, err);
+      if (!res.headersSent) {
+        sendResponse(res, err.code === 'ENOENT' ? 404 : 500, { error: 'File not found or expired' });
+      } else {
+        res.destroy();
+      }
+    });
     fileStream.pipe(res);
 
     // Mark as downloaded and schedule deletion
@@ -454,18 +465,20 @@ const server = http.createServer((req, res)  => {
     res.on('finish', () => {
       try {
         fs.unlinkSync(filePath);
-
-        // Remove from user session if exists
-        const fileSessionId = fileDatabase[fileId].sessionId;
+      } catch (err) {
+        console.error(`Error deleting file ${filename}:`, err);
+      }
+      // Clean up metadata regardless of whether disk deletion succeeded
+      try {
+        const fileSessionId = fileDatabase[fileId] && fileDatabase[fileId].sessionId;
         if (fileSessionId && userSessions[fileSessionId]) {
           userSessions[fileSessionId].files = userSessions[fileSessionId].files.filter(id => id !== fileId);
         }
-
         delete fileDatabase[fileId];
         saveMetadata(); // persist after download-triggered deletion
         console.log(`File ${filename} deleted after download`);
       } catch (err) {
-        console.error(`Error deleting file ${filename}:`, err);
+        console.error(`Error cleaning up metadata for ${filename}:`, err);
       }
     });
 
