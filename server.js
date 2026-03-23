@@ -129,61 +129,105 @@ function createSession() {
   return sessionId;
 }
 
-// Parse multipart form data properly for binary files
-function parseMultipartFormData(buffer, boundary) {
-  const result = {
-    fileName: null,
-    fileContent: null
-  };
-  
-  // Convert boundary to buffer for binary comparison
-  const boundaryBuffer = Buffer.from('--' + boundary);
-  const crlfBuffer = Buffer.from('\r\n');
-  const headerEndBuffer = Buffer.from('\r\n\r\n');
-  
-  // Find all boundary positions
-  let boundaryPositions = [];
-  let pos = 0;
-  
-  while (true) {
-    const index = buffer.indexOf(boundaryBuffer, pos);
-    if (index === -1) break;
-    boundaryPositions.push(index);
-    pos = index + boundaryBuffer.length;
-  }
-  
-  // Process each part
-  for (let i = 0; i < boundaryPositions.length - 1; i++) {
-    const partStart = boundaryPositions[i] + boundaryBuffer.length;
-    const partEnd = boundaryPositions[i + 1];
-    const part = buffer.slice(partStart, partEnd);
-    
-    // Check if this part contains a file
-    if (part.includes(Buffer.from('filename='))) {
-      // Find header end position
-      const headerEndPos = part.indexOf(headerEndBuffer);
-      if (headerEndPos === -1) continue;
-      
-      // Extract header as string for parsing
-      const header = part.slice(0, headerEndPos).toString();
-      
-      // Extract filename
-      const filenameMatch = header.match(/filename="([^"]+)"/);
-      if (!filenameMatch) continue;
-      result.fileName = filenameMatch[1];
-      
-      // Extract file content (binary safe)
-      const contentStart = headerEndPos + headerEndBuffer.length;
-      // Content ends before the CRLF that precedes the next boundary
-      const contentEnd = part.length - 2; // -2 for CRLF
-      
-      // Extract binary content
-      result.fileContent = part.slice(contentStart, contentEnd);
-      break; // We found the file part, no need to continue
+// Stream a multipart upload directly to disk — no full-file buffering in RAM.
+// Returns a Promise resolving to { fileName, fileId, uniqueFilename, filePath, fileSize }.
+function streamUploadToDisk(req) {
+  return new Promise((resolve, reject) => {
+    const contentType = req.headers['content-type'] || '';
+    const m = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+    if (!m) return reject(new Error('No boundary in Content-Type'));
+
+    const boundary = (m[1] || m[2]).trim();
+    // After the body starts the first part header ends with \r\n\r\n,
+    // then file bytes follow until \r\n--<boundary>
+    const HEADER_END = Buffer.from('\r\n\r\n');
+    const DELIMITER  = Buffer.from('\r\n--' + boundary);
+
+    let buf        = Buffer.alloc(0);
+    let state      = 'HEADER'; // → BODY → DONE
+    let fileName   = null;
+    let fileId     = null;
+    let uniqueName = null;
+    let filePath   = null;
+    let ws         = null;      // write stream
+    let fileSize   = 0;
+    let totalIn    = 0;
+    let done       = false;
+
+    function fail(err) {
+      if (done) return;
+      done = true;
+      if (ws) { ws.destroy(); ws = null; }
+      if (filePath) { try { fs.unlinkSync(filePath); } catch (_) {} filePath = null; }
+      reject(err);
     }
-  }
-  
-  return result;
+
+    function flushBody(final) {
+      if (!ws || done) return;
+      const idx = buf.indexOf(DELIMITER);
+      if (idx !== -1) {
+        // Found boundary — write up to it and stop
+        ws.write(buf.slice(0, idx));
+        fileSize += idx;
+        buf   = buf.slice(idx);
+        state = 'DONE';
+      } else if (final) {
+        // End of stream — write remainder minus trailing \r\n (final boundary suffix)
+        const end = buf.length >= 2 ? buf.length - 2 : buf.length;
+        if (end > 0) { ws.write(buf.slice(0, end)); fileSize += end; }
+        buf = Buffer.alloc(0);
+      } else {
+        // Keep last DELIMITER.length bytes in buffer (boundary may span chunks)
+        const safe = buf.length - DELIMITER.length;
+        if (safe > 0) {
+          ws.write(buf.slice(0, safe));
+          fileSize += safe;
+          buf = buf.slice(safe);
+        }
+      }
+    }
+
+    req.on('data', chunk => {
+      if (done) return;
+      totalIn += chunk.length;
+      if (totalIn > MAX_FILE_SIZE) { fail(Object.assign(new Error('File too large'), { code: 'TOO_LARGE' })); req.destroy(); return; }
+
+      buf = Buffer.concat([buf, chunk]);
+
+      if (state === 'HEADER') {
+        const hEnd = buf.indexOf(HEADER_END);
+        if (hEnd === -1) return; // need more data
+        const header = buf.slice(0, hEnd).toString();
+        const fm = header.match(/filename="([^"]+)"/);
+        if (!fm) return fail(new Error('No filename in part headers'));
+
+        fileName   = path.basename(fm[1]);
+        fileId     = generateUniqueId();
+        uniqueName = fileId + path.extname(fileName);
+        filePath   = path.join(UPLOAD_DIR, uniqueName);
+        ws         = fs.createWriteStream(filePath);
+        ws.on('error', fail);
+
+        buf   = buf.slice(hEnd + 4); // skip past \r\n\r\n
+        state = 'BODY';
+      }
+
+      if (state === 'BODY') flushBody(false);
+    });
+
+    req.on('end', () => {
+      if (done) return;
+      if (state === 'BODY') flushBody(true);
+      if (!ws) return fail(new Error('No file received'));
+      ws.end(() => {
+        if (done) return;
+        done = true;
+        resolve({ fileName, fileId, uniqueName, filePath, fileSize });
+      });
+    });
+
+    req.on('error', fail);
+  });
 }
 
 // Cleanup expired files (runs every minute)
@@ -283,104 +327,54 @@ const server = http.createServer((req, res)  => {
   }
   
   if (pathname === '/api/upload' && req.method === 'POST') {
-    // Handle file upload
-    let chunks = [];
-    let fileSize = 0;
-    
-    req.on('data', (chunk) => {
-      fileSize += chunk.length;
-      
-      // Check file size limit
-      if (fileSize > MAX_FILE_SIZE) {
-        req.destroy();
-        sendResponse(res, 413, { error: 'File too large' });
-        return;
-      }
-      
-      chunks.push(chunk);
-    });
-    
-    req.on('end', () => {
-      try {
-        // Get the boundary from the content-type header
-        const contentType = req.headers['content-type'] || '';
-        const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
-        
-        if (!boundaryMatch) {
-          sendResponse(res, 400, { error: 'Invalid content type or missing boundary' });
-          return;
-        }
-        
-        const boundary = boundaryMatch[1] || boundaryMatch[2];
-        const buffer = Buffer.concat(chunks);
-        
-        // Parse multipart form data
-        const { fileName, fileContent } = parseMultipartFormData(buffer, boundary);
-        
-        if (!fileName || !fileContent) {
-          sendResponse(res, 400, { error: 'No file uploaded or invalid file data' });
-          return;
-        }
-
-        // Reject dot-prefix filenames (guards against .metadata.json injection)
-        if (fileName.startsWith('.')) {
-          sendResponse(res, 400, { error: 'Invalid filename' });
-          return;
-        }
-
-        // Extension denylist (case-insensitive)
-        const fileExtension = path.extname(fileName).toLowerCase();
-        if (!fileExtension || DENIED_EXTENSIONS.has(fileExtension)) {
-          sendResponse(res, 400, { error: 'File type not allowed' });
-          return;
-        }
-
-        // Generate unique ID first, then guard with inFlightUploads Set
-        const fileId = generateUniqueId();
-        if (inFlightUploads.has(fileId)) {
-          sendResponse(res, 409, { error: 'Upload already in progress' });
-          return;
-        }
+    streamUploadToDisk(req)
+      .then(({ fileName, fileId, uniqueName, filePath, fileSize }) => {
+        // Guard in-flight (tracks server-side processing; IDs are crypto-random so
+        // collisions are astronomically unlikely — Set primarily guards against bugs)
         inFlightUploads.add(fileId);
-
         try {
-        const uniqueFilename = `${fileId}${fileExtension}`;
-        const filePath = path.join(UPLOAD_DIR, uniqueFilename);
+          // Reject dot-prefix filenames (guards against .metadata.json injection)
+          if (fileName.startsWith('.')) {
+            try { fs.unlinkSync(filePath); } catch (_) {}
+            sendResponse(res, 400, { error: 'Invalid filename' });
+            return;
+          }
 
-        // Save file (binary safe)
-        fs.writeFileSync(filePath, fileContent);
+          // Extension denylist (case-insensitive)
+          const fileExtension = path.extname(fileName).toLowerCase();
+          if (!fileExtension || DENIED_EXTENSIONS.has(fileExtension)) {
+            try { fs.unlinkSync(filePath); } catch (_) {}
+            sendResponse(res, 400, { error: 'File type not allowed' });
+            return;
+          }
 
-        // Store file metadata
-        fileDatabase[fileId] = {
-          originalName: fileName,
-          filename: uniqueFilename,
-          size: fileContent.length,
-          uploadTime: Date.now(),
-          expiryTime: Date.now() + FILE_EXPIRY,
-          downloaded: false,
-          sessionId: sessionId
-        };
+          fileDatabase[fileId] = {
+            originalName: fileName,
+            filename: uniqueName,
+            size: fileSize,
+            uploadTime: Date.now(),
+            expiryTime: Date.now() + FILE_EXPIRY,
+            downloaded: false,
+            sessionId: sessionId
+          };
+          userSessions[sessionId].files.push(fileId);
+          saveMetadata(); // persist after upload
 
-        // Add to user session
-        userSessions[sessionId].files.push(fileId);
-        saveMetadata(); // persist after upload
-        
-        // Return success response
-        sendResponse(res, 200, {
-          message: 'File uploaded successfully',
-          fileId: fileId,
-          downloadLink: `http://${req.headers.host}/download/${uniqueFilename}`,
-          expiryTime: fileDatabase[fileId].expiryTime
-        });
+          sendResponse(res, 200, {
+            message: 'File uploaded successfully',
+            fileId,
+            downloadLink: `http://${req.headers.host}/download/${uniqueName}`,
+            expiryTime: fileDatabase[fileId].expiryTime
+          });
         } finally {
           inFlightUploads.delete(fileId);
         }
-      } catch (error) {
-        console.error('Upload error:', error);
-        sendResponse(res, 500, { error: 'File upload failed' });
-      }
-    });
-    
+      })
+      .catch(err => {
+        console.error('Upload error:', err);
+        if (err.code === 'TOO_LARGE') return sendResponse(res, 413, { error: 'File too large (max 1 GB)' });
+        if (!res.headersSent) sendResponse(res, 400, { error: err.message || 'Upload failed' });
+      });
     return;
   }
   
