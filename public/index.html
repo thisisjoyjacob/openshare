@@ -54,7 +54,6 @@
         .text-primary { color: var(--text-primary); }
         .text-secondary { color: var(--text-secondary); }
         .border-custom { border-color: var(--border-color); }
-
         .accent-custom { background-color: var(--accent-color); }
         .accent-custom:hover { background-color: var(--accent-hover); }
 
@@ -64,127 +63,38 @@
             color: var(--success-text);
         }
 
-        .drop-zone {
-            border: 2px dashed var(--border-color);
-            border-radius: 0.5rem;
-            transition: all 0.3s ease;
-        }
-        .drop-zone:hover, .drop-zone.active {
-            border-color: var(--accent-color);
-            background-color: rgba(79, 70, 229, 0.05);
-        }
+        .drop-zone { border: 2px dashed var(--border-color); border-radius: 0.5rem; transition: all 0.3s ease; }
+        .drop-zone:hover, .drop-zone.active { border-color: var(--accent-color); background-color: rgba(79, 70, 229, 0.05); }
 
         .progress-bar { transition: width 0.3s ease; }
         .progress-track { background-color: var(--track-bg); }
 
-        .file-card {
-            transition: all 0.3s ease;
-            background-color: var(--bg-secondary);
-            border-color: var(--border-color);
-        }
-        .file-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
-        }
+        .file-card { transition: all 0.3s ease; background-color: var(--bg-secondary); border-color: var(--border-color); }
+        .file-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
 
-        /* Icon container in file cards */
-        .file-icon-bg {
-            background-color: var(--icon-bg);
-            border-radius: 0.375rem;
-            padding: 0.75rem;
-            flex-shrink: 0;
-        }
+        .file-icon-bg { background-color: var(--icon-bg); border-radius: 0.375rem; padding: 0.75rem; flex-shrink: 0; }
         .file-icon-color { color: var(--accent-color); }
 
-        /* Buttons */
-        .btn-hover {
-            background-color: var(--bg-secondary);
-            border-color: var(--border-color);
-            color: var(--text-secondary);
-            transition: all 0.3s ease;
-        }
-        .btn-hover:hover {
-            background-color: var(--accent-color);
-            color: white;
-            border-color: var(--accent-color);
-        }
+        .btn-hover { background-color: var(--bg-secondary); border-color: var(--border-color); color: var(--text-secondary); transition: all 0.3s ease; }
+        .btn-hover:hover { background-color: var(--accent-color); color: white; border-color: var(--accent-color); }
 
-        .btn-icon {
-            color: var(--text-secondary);
-            transition: background-color 0.2s;
-        }
+        .btn-icon { color: var(--text-secondary); transition: background-color 0.2s; }
         .btn-icon:hover { background-color: var(--border-color); }
 
-        .copy-btn {
-            transition: all 0.2s ease;
-            border-color: var(--border-color);
-            background-color: var(--bg-secondary);
-            color: var(--text-secondary);
-        }
-        .copy-btn:hover {
-            background-color: var(--accent-color);
-            color: white;
-        }
+        .copy-btn { transition: all 0.2s ease; border-color: var(--border-color); background-color: var(--bg-secondary); color: var(--text-secondary); }
+        .copy-btn:hover { background-color: var(--accent-color); color: white; }
 
-        /* Input */
-        .input-custom {
-            background-color: var(--input-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            transition: border-color 0.2s, background-color 0.3s;
-        }
+        .input-custom { background-color: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border-color); transition: border-color 0.2s, background-color 0.3s; }
         .input-custom:focus { outline: none; border-color: var(--accent-color); }
 
-        /* QR code always needs white bg for readability */
-        .qr-code-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-            background-color: white;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-        }
+        .qr-code-container { display: flex; justify-content: center; align-items: center; padding: 1rem; background-color: white; border-radius: 0.5rem; margin-top: 1rem; }
         .qr-code-container.hidden { display: none; }
 
         .tooltip { position: relative; display: inline-block; }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 80px;
-            background-color: #555;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -40px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tooltip .tooltiptext::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #555 transparent transparent transparent;
-        }
+        .tooltip .tooltiptext { visibility: hidden; width: 80px; background-color: #555; color: #fff; text-align: center; border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -40px; opacity: 0; transition: opacity 0.3s; }
+        .tooltip .tooltiptext::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #555 transparent transparent transparent; }
 
-        /* Upload queue */
-        .queue-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
+        .queue-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color); font-size: 0.875rem; color: var(--text-secondary); }
         .queue-item:last-child { border-bottom: none; }
         .queue-status { font-size: 0.75rem; }
         .queue-status.done { color: #10b981; }
@@ -198,12 +108,8 @@
             <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                 <h1 class="text-2xl font-bold" style="color: var(--accent-color);">OpenShare</h1>
                 <div class="flex items-center space-x-4">
-                    <button id="theme-toggle" class="btn-icon p-2 rounded-full focus:outline-none">
-                        <i id="theme-icon" class="fas fa-moon text-secondary"></i>
-                    </button>
-                    <button id="reset-session-btn" class="btn-hover inline-flex items-center px-3 py-1.5 border rounded-md text-sm font-medium focus:outline-none">
-                        <i class="fas fa-redo-alt mr-2"></i> Reset Session
-                    </button>
+                    <button id="theme-toggle" class="btn-icon p-2 rounded-full focus:outline-none"><i id="theme-icon" class="fas fa-moon text-secondary"></i></button>
+                    <button id="reset-session-btn" class="btn-hover inline-flex items-center px-3 py-1.5 border rounded-md text-sm font-medium focus:outline-none"><i class="fas fa-redo-alt mr-2"></i> Reset Session</button>
                     <p class="text-sm text-secondary hidden sm:block">Simple, secure file sharing</p>
                 </div>
             </div>
@@ -211,8 +117,6 @@
 
         <main class="flex-grow">
             <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-
-                <!-- Upload Section -->
                 <div class="bg-card overflow-hidden shadow rounded-lg mb-6">
                     <div class="px-4 py-5 sm:p-6">
                         <h2 class="text-lg font-medium text-primary mb-4">Upload Files</h2>
@@ -220,15 +124,11 @@
                             <div class="space-y-4">
                                 <i class="fas fa-cloud-upload-alt text-4xl text-secondary"></i>
                                 <p class="text-secondary">Drag and drop files here, or click to select</p>
-                                <p class="text-xs text-secondary">Up to 1GB per file • Auto-delete after 4 hours or first download • Multiple files supported</p>
-                                <button id="select-file-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white accent-custom focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                    Select Files
-                                </button>
+                                <p class="text-xs text-secondary">Up to 1GB per file &bull; Auto-delete after 4 hours or first download &bull; Multiple files supported</p>
+                                <button id="select-file-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white accent-custom focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Select Files</button>
                                 <input type="file" id="file-input" class="hidden" multiple>
                             </div>
                         </div>
-
-                        <!-- Upload Progress -->
                         <div id="upload-progress-container" class="mt-4 hidden">
                             <div class="flex justify-between mb-1">
                                 <span class="text-sm font-medium text-primary" id="progress-text">Uploading...</span>
@@ -237,59 +137,35 @@
                             <div class="progress-track w-full rounded-full h-2.5">
                                 <div id="progress-bar" class="progress-bar accent-custom h-2.5 rounded-full" style="width: 0%"></div>
                             </div>
-                            <!-- Queue list -->
                             <div id="upload-queue" class="mt-3 hidden"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Upload Success Message -->
                 <div id="upload-success" class="success-custom border-l-4 p-4 mb-6 hidden">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm" id="upload-success-text">File uploaded successfully! Share the link below.</p>
-                        </div>
-                    </div>
+                    <div class="flex"><div class="flex-shrink-0"><i class="fas fa-check-circle"></i></div><div class="ml-3"><p class="text-sm" id="upload-success-text">File uploaded successfully! Share the link below.</p></div></div>
                 </div>
 
-                <!-- File Link Section (last uploaded) -->
                 <div id="file-link-container" class="bg-card overflow-hidden shadow rounded-lg mb-6 hidden">
                     <div class="px-4 py-5 sm:p-6">
                         <h2 class="text-lg font-medium text-primary mb-4">Share Your File</h2>
                         <div class="flex">
-                            <input id="file-link" type="text" readonly
-                                class="input-custom flex-grow block w-full rounded-none rounded-l-md sm:text-sm px-3 py-2"
-                                placeholder="File link will appear here">
-                            <button id="copy-link-btn" class="copy-btn inline-flex items-center px-4 py-2 border text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                <i class="fas fa-copy mr-2"></i> Copy
-                            </button>
+                            <input id="file-link" type="text" readonly class="input-custom flex-grow block w-full rounded-none rounded-l-md sm:text-sm px-3 py-2" placeholder="File link will appear here">
+                            <button id="copy-link-btn" class="copy-btn inline-flex items-center px-4 py-2 border text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"><i class="fas fa-copy mr-2"></i> Copy</button>
                         </div>
                         <p class="mt-2 text-sm text-secondary">This link expires in 4 hours or after the first download.</p>
-
-                        <!-- QR Code -->
                         <div class="mt-4">
-                            <button id="show-qr-btn" class="btn-hover inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium focus:outline-none">
-                                <i class="fas fa-qrcode mr-2"></i> Show QR Code
-                            </button>
-                            <div id="qr-code-container" class="qr-code-container hidden">
-                                <div id="qr-code"></div>
-                            </div>
+                            <button id="show-qr-btn" class="btn-hover inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium focus:outline-none"><i class="fas fa-qrcode mr-2"></i> Show QR Code</button>
+                            <div id="qr-code-container" class="qr-code-container hidden"><div id="qr-code"></div></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Files Dashboard -->
                 <div class="bg-card overflow-hidden shadow rounded-lg">
                     <div class="px-4 py-5 sm:p-6">
                         <h2 class="text-lg font-medium text-primary mb-4">Your Files</h2>
                         <div id="files-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
-                        <div id="no-files-message" class="text-center py-8 text-secondary">
-                            <i class="fas fa-folder-open text-4xl mb-2"></i>
-                            <p>No files uploaded yet</p>
-                        </div>
+                        <div id="no-files-message" class="text-center py-8 text-secondary"><i class="fas fa-folder-open text-4xl mb-2"></i><p>No files uploaded yet</p></div>
                     </div>
                 </div>
             </div>
@@ -297,15 +173,17 @@
 
         <footer class="bg-card">
             <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-                <p class="text-center text-sm text-secondary">
-                    OpenShare — Simple file sharing without login. Files auto-delete after 4 hours or first download.
-                </p>
+                <p class="text-center text-sm text-secondary">OpenShare — Simple file sharing without login. Files auto-delete after 4 hours or first download.</p>
             </div>
         </footer>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
+        function escHtml(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
         const selectFileBtn = document.getElementById('select-file-btn');
@@ -328,41 +206,27 @@
         const qrCodeContainer = document.getElementById('qr-code-container');
         const qrCodeEl = document.getElementById('qr-code');
 
-        // ── Theme ────────────────────────────────────────────────────────
         function setTheme(isDark) {
-            // Toggle class on <html> — no leftover "light" class
             document.documentElement.className = isDark ? 'dark' : '';
             themeIcon.className = isDark ? 'fas fa-sun text-secondary' : 'fas fa-moon text-secondary';
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
         }
-
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         setTheme(savedTheme === 'dark' || (!savedTheme && prefersDark));
+        themeToggle.addEventListener('click', () => setTheme(!document.documentElement.classList.contains('dark')));
 
-        themeToggle.addEventListener('click', () => {
-            setTheme(!document.documentElement.classList.contains('dark'));
-        });
-
-        // ── Reset session ────────────────────────────────────────────────
         resetSessionBtn.addEventListener('click', () => {
             if (!confirm('Reset session? All your uploaded files will be deleted.')) return;
-            fetch('/api/reset-session', { method: 'POST' })
-                .then(r => r.json())
-                .then(() => {
-                    filesContainer.innerHTML = '';
-                    noFilesMessage.classList.remove('hidden');
-                    uploadSuccess.classList.add('hidden');
-                    fileLinkContainer.classList.add('hidden');
-                    alert('Session reset. All files deleted.');
-                })
-                .catch(() => alert('Failed to reset session.'));
+            fetch('/api/reset-session', { method: 'POST' }).then(r => r.json()).then(() => {
+                filesContainer.innerHTML = ''; noFilesMessage.classList.remove('hidden');
+                uploadSuccess.classList.add('hidden'); fileLinkContainer.classList.add('hidden');
+                alert('Session reset. All files deleted.');
+            }).catch(() => alert('Failed to reset session.'));
         });
 
-        // ── QR code (last-uploaded link) ─────────────────────────────────
         showQrBtn.addEventListener('click', () => {
-            const url = fileLink.value;
-            if (!url) return;
+            const url = fileLink.value; if (!url) return;
             qrCodeContainer.classList.toggle('hidden');
             if (!qrCodeContainer.classList.contains('hidden')) {
                 qrCodeEl.innerHTML = '';
@@ -370,155 +234,80 @@
             }
         });
 
-        // ── File selection / drag-drop ───────────────────────────────────
         selectFileBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => { if (e.target.files.length > 0) uploadFiles(Array.from(e.target.files)); });
 
-        fileInput.addEventListener('change', e => {
-            if (e.target.files.length > 0) uploadFiles(Array.from(e.target.files));
-        });
+        ['dragenter','dragover','dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
+        ['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.add('active')));
+        ['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('active')));
+        dropZone.addEventListener('drop', e => { const files = Array.from(e.dataTransfer.files); if (files.length > 0) uploadFiles(files); });
 
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
-            dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
-
-        ['dragenter', 'dragover'].forEach(ev =>
-            dropZone.addEventListener(ev, () => dropZone.classList.add('active')));
-        ['dragleave', 'drop'].forEach(ev =>
-            dropZone.addEventListener(ev, () => dropZone.classList.remove('active')));
-
-        dropZone.addEventListener('drop', e => {
-            const files = Array.from(e.dataTransfer.files);
-            if (files.length > 0) uploadFiles(files);
-        });
-
-        // ── Upload queue (sequential) ────────────────────────────────────
         async function uploadFiles(files) {
-            const tooBig = files.filter(f => f.size > 1024 * 1024 * 1024);
-            if (tooBig.length) {
-                alert(`${tooBig.map(f => f.name).join(', ')} exceed the 1 GB limit and will be skipped.`);
-                files = files.filter(f => f.size <= 1024 * 1024 * 1024);
-            }
+            const tooBig = files.filter(f => f.size > 1024*1024*1024);
+            if (tooBig.length) { alert(`${tooBig.map(f=>f.name).join(', ')} exceed the 1 GB limit and will be skipped.`); files = files.filter(f => f.size <= 1024*1024*1024); }
             if (!files.length) return;
 
-            uploadProgressContainer.classList.remove('hidden');
-            uploadSuccess.classList.add('hidden');
-            fileLinkContainer.classList.add('hidden');
-            qrCodeContainer.classList.add('hidden');
+            uploadProgressContainer.classList.remove('hidden'); uploadSuccess.classList.add('hidden');
+            fileLinkContainer.classList.add('hidden'); qrCodeContainer.classList.add('hidden');
 
-            // Build queue UI for multiple files
             if (files.length > 1) {
                 uploadQueue.classList.remove('hidden');
-                uploadQueue.innerHTML = files.map((f, i) =>
-                    `<div class="queue-item" id="qi-${i}">
-                        <span class="truncate mr-2">${f.name}</span>
-                        <span class="queue-status" id="qs-${i}">Waiting</span>
-                    </div>`
-                ).join('');
-            } else {
-                uploadQueue.classList.add('hidden');
-            }
+                uploadQueue.innerHTML = files.map((f,i) => `<div class="queue-item" id="qi-${i}"><span class="truncate mr-2">${escHtml(f.name)}</span><span class="queue-status" id="qs-${i}">Waiting</span></div>`).join('');
+            } else { uploadQueue.classList.add('hidden'); }
 
-            let lastLink = null;
-            let successCount = 0;
-
+            let lastLink = null, successCount = 0;
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                if (files.length > 1) {
-                    document.getElementById(`qs-${i}`).textContent = 'Uploading…';
-                    document.getElementById(`qs-${i}`).className = 'queue-status uploading';
-                }
-
-                progressText.textContent = `Uploading ${file.name}…`;
-                progressBar.style.width = '0%';
-                progressPercentage.textContent = '0%';
-
+                if (files.length > 1) { document.getElementById(`qs-${i}`).textContent = 'Uploading\u2026'; document.getElementById(`qs-${i}`).className = 'queue-status uploading'; }
+                progressText.textContent = `Uploading ${escHtml(file.name)}\u2026`; progressBar.style.width = '0%'; progressPercentage.textContent = '0%';
                 try {
-                    const link = await uploadSingle(file, (pct) => {
-                        progressBar.style.width = pct + '%';
-                        progressPercentage.textContent = pct + '%';
-                    });
-                    lastLink = link;
-                    successCount++;
-                    if (files.length > 1) {
-                        document.getElementById(`qs-${i}`).textContent = '✓ Done';
-                        document.getElementById(`qs-${i}`).className = 'queue-status done';
-                    }
+                    const link = await uploadSingle(file, pct => { progressBar.style.width = pct+'%'; progressPercentage.textContent = pct+'%'; });
+                    lastLink = link; successCount++;
+                    if (files.length > 1) { document.getElementById(`qs-${i}`).textContent = '\u2713 Done'; document.getElementById(`qs-${i}`).className = 'queue-status done'; }
                 } catch (err) {
-                    if (files.length > 1) {
-                        document.getElementById(`qs-${i}`).textContent = '✗ Failed';
-                        document.getElementById(`qs-${i}`).className = 'queue-status error';
-                    }
+                    if (files.length > 1) { document.getElementById(`qs-${i}`).textContent = '\u2717 Failed'; document.getElementById(`qs-${i}`).className = 'queue-status error'; }
                     console.error('Upload failed:', err);
                 }
             }
-
             progressText.textContent = successCount === files.length ? 'All uploads complete!' : `${successCount}/${files.length} uploaded`;
-            progressBar.style.width = '100%';
-            progressPercentage.textContent = '100%';
-
+            progressBar.style.width = '100%'; progressPercentage.textContent = '100%';
             if (lastLink) {
-                uploadSuccessText.textContent = files.length > 1
-                    ? `${successCount} file(s) uploaded. Showing last share link.`
-                    : 'File uploaded successfully! Share the link below.';
-                uploadSuccess.classList.remove('hidden');
-                fileLinkContainer.classList.remove('hidden');
-                fileLink.value = lastLink;
+                uploadSuccessText.textContent = files.length > 1 ? `${successCount} file(s) uploaded. Showing last share link.` : 'File uploaded successfully! Share the link below.';
+                uploadSuccess.classList.remove('hidden'); fileLinkContainer.classList.remove('hidden'); fileLink.value = lastLink;
             }
-
-            fetchFiles();
-            fileInput.value = ''; // allow re-selecting same file
+            fetchFiles(); fileInput.value = '';
         }
 
         function uploadSingle(file, onProgress) {
             return new Promise((resolve, reject) => {
-                const formData = new FormData();
-                formData.append('file', file);
+                const formData = new FormData(); formData.append('file', file);
                 const xhr = new XMLHttpRequest();
-                xhr.upload.addEventListener('progress', e => {
-                    if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-                });
-                xhr.addEventListener('load', () => {
-                    if (xhr.status === 200) {
-                        resolve(JSON.parse(xhr.responseText).downloadLink);
-                    } else {
-                        reject(new Error(xhr.statusText));
-                    }
-                });
+                xhr.upload.addEventListener('progress', e => { if (e.lengthComputable) onProgress(Math.round((e.loaded/e.total)*100)); });
+                xhr.addEventListener('load', () => { xhr.status === 200 ? resolve(JSON.parse(xhr.responseText).downloadLink) : reject(new Error(xhr.statusText)); });
                 xhr.addEventListener('error', () => reject(new Error('Network error')));
-                xhr.open('POST', '/api/upload', true);
-                xhr.send(formData);
+                xhr.open('POST', '/api/upload', true); xhr.send(formData);
             });
         }
 
-        // ── Copy link ────────────────────────────────────────────────────
         copyLinkBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(fileLink.value).catch(() => {
-                fileLink.select();
-                document.execCommand('copy');
-            });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(fileLink.value).catch(() => { fileLink.select(); document.execCommand('copy'); });
+            } else { fileLink.select(); document.execCommand('copy'); }
             const orig = copyLinkBtn.innerHTML;
             copyLinkBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Copied!';
             setTimeout(() => { copyLinkBtn.innerHTML = orig; }, 2000);
         });
 
-        // ── File list ────────────────────────────────────────────────────
         function fetchFiles() {
-            fetch('/api/files')
-                .then(r => r.json())
-                .then(files => {
-                    filesContainer.innerHTML = '';
-                    if (files.length === 0) {
-                        noFilesMessage.classList.remove('hidden');
-                    } else {
-                        noFilesMessage.classList.add('hidden');
-                        files.forEach(f => filesContainer.appendChild(createFileCard(f)));
-                    }
-                })
-                .catch(err => console.error('Error fetching files:', err));
+            fetch('/api/files').then(r => r.json()).then(files => {
+                filesContainer.innerHTML = '';
+                if (!files.length) { noFilesMessage.classList.remove('hidden'); }
+                else { noFilesMessage.classList.add('hidden'); files.forEach(f => filesContainer.appendChild(createFileCard(f))); }
+            }).catch(err => console.error('Error fetching files:', err));
         }
 
         function createFileCard(file) {
-            const now = Date.now();
-            const remaining = file.expiryTime - now;
+            const now = Date.now(), remaining = file.expiryTime - now;
             const h = Math.max(0, Math.floor(remaining / 3_600_000));
             const m = Math.max(0, Math.floor((remaining % 3_600_000) / 60_000));
             const pct = Math.min(100, Math.max(0, (remaining / (4 * 3_600_000)) * 100));
@@ -528,30 +317,19 @@
             card.innerHTML = `
                 <div class="px-4 py-5 sm:p-6">
                     <div class="flex items-center">
-                        <div class="file-icon-bg">
-                            <i class="fas fa-file file-icon-color"></i>
-                        </div>
+                        <div class="file-icon-bg"><i class="fas fa-file file-icon-color"></i></div>
                         <div class="ml-4 flex-1 min-w-0">
                             <h3 class="text-sm font-medium text-primary truncate" title="${escHtml(file.originalName)}">${escHtml(file.originalName)}</h3>
                             <p class="text-xs text-secondary">${formatSize(file.size)}</p>
                         </div>
                     </div>
                     <div class="mt-4">
-                        <div class="flex justify-between text-xs text-secondary mb-1">
-                            <span>Expires in:</span>
-                            <span>${h}h ${m}m</span>
-                        </div>
-                        <div class="progress-track w-full rounded-full h-1.5">
-                            <div class="accent-custom h-1.5 rounded-full" style="width: ${pct}%"></div>
-                        </div>
+                        <div class="flex justify-between text-xs text-secondary mb-1"><span>Expires in:</span><span>${h}h ${m}m</span></div>
+                        <div class="progress-track w-full rounded-full h-1.5"><div class="accent-custom h-1.5 rounded-full" style="width: ${pct}%"></div></div>
                     </div>
                     <div class="mt-4 flex space-x-2">
-                        <a href="${file.downloadLink}" class="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white accent-custom focus:outline-none">
-                            <i class="fas fa-download mr-2"></i> Download
-                        </a>
-                        <button class="show-qr-btn btn-hover p-2 border rounded-md" data-url="${file.downloadLink}" title="Show QR code">
-                            <i class="fas fa-qrcode"></i>
-                        </button>
+                        <a href="${escHtml(file.downloadLink)}" class="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white accent-custom focus:outline-none"><i class="fas fa-download mr-2"></i> Download</a>
+                        <button class="show-qr-btn btn-hover p-2 border rounded-md" data-url="${escHtml(file.downloadLink)}" title="Show QR code"><i class="fas fa-qrcode"></i></button>
                     </div>
                     <div class="qr-code-preview hidden"></div>
                 </div>`;
@@ -561,17 +339,10 @@
                 preview.classList.toggle('hidden');
                 if (!preview.classList.contains('hidden') && !preview.firstChild) {
                     preview.style.cssText = 'display:flex;justify-content:center;padding:0.75rem;background:white;border-radius:0.5rem;margin-top:0.75rem;';
-                    QRCode.toCanvas(document.createElement('canvas'), this.dataset.url, { width: 128 }, (err, canvas) => {
-                        if (!err) preview.appendChild(canvas);
-                    });
+                    QRCode.toCanvas(document.createElement('canvas'), this.dataset.url, { width: 128 }, (err, canvas) => { if (!err) preview.appendChild(canvas); });
                 }
             });
-
             return card;
-        }
-
-        function escHtml(s) {
-            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         }
 
         function formatSize(bytes) {
@@ -581,15 +352,11 @@
             return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
         }
 
-        // Initial load + auto-refresh
         fetchFiles();
         setInterval(fetchFiles, 30000);
 
-        // PWA service worker
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js').catch(() => {});
-            });
+            window.addEventListener('load', () => { navigator.serviceWorker.register('/service-worker.js').catch(() => {}); });
         }
     });
     </script>
