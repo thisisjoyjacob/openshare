@@ -3,13 +3,15 @@ const http = require('http') ;
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { parse } = require('querystring');
 
 // Configuration
 const PORT = process.env.PORT || 3000;
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
 const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
 const FILE_EXPIRY = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const METADATA_PATH = path.join(__dirname, 'uploads', '.metadata.json');
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 // Ensure uploads directory exists
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -58,6 +60,96 @@ function sendResponse(res, statusCode, data, contentType = 'application/json') {
   res.end(typeof data === 'object' ? JSON.stringify(data) : data);
 }
 
+function sanitizeFilename(name) {
+  // Strip HTML tags
+  name = name.replace(/<[^>]*>/g, '');
+  // Remove null bytes, control chars, path separators
+  name = name.replace(/[\x00-\x1f\x7f/\\]/g, '');
+  // Remove leading/trailing dots and spaces
+  name = name.replace(/^[.\s]+|[.\s]+$/g, '');
+  // Truncate to 255 chars
+  name = name.substring(0, 255).trim();
+  return name || 'unnamed_file';
+}
+
+function safeContentDisposition(filename) {
+  // ASCII-safe version: replace non-printable, quotes, semicolons, non-ASCII
+  const asciiSafe = filename.replace(/[\x00-\x1f"\\;]/g, '_')
+    .replace(/[^\x20-\x7e]/g, '_');
+  // RFC 5987 encoded version for UTF-8 support
+  const encoded = encodeURIComponent(filename).replace(/'/g, '%27');
+  return `attachment; filename="${asciiSafe}"; filename*=UTF-8''${encoded}`;
+}
+
+// Metadata persistence with atomic writes
+let saveTimeout = null;
+function saveMetadata() {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    const tmpPath = METADATA_PATH + '.tmp';
+    const data = JSON.stringify({ files: fileDatabase, sessions: userSessions }, null, 2);
+    fs.promises.writeFile(tmpPath, data)
+      .then(() => { fs.renameSync(tmpPath, METADATA_PATH); })
+      .catch(err => { console.error('Failed to save metadata:', err); });
+  }, 1000);
+}
+
+function loadMetadata() {
+  try {
+    if (fs.existsSync(METADATA_PATH)) {
+      const data = JSON.parse(fs.readFileSync(METADATA_PATH, 'utf8'));
+      Object.assign(fileDatabase, data.files || {});
+      Object.assign(userSessions, data.sessions || {});
+      console.log(`Loaded ${Object.keys(data.files || {}).length} files from metadata`);
+    }
+  } catch (err) {
+    console.error('Failed to load metadata (starting fresh):', err.message);
+  }
+}
+
+function cleanupOrphans() {
+  const knownFiles = new Set(Object.values(fileDatabase).map(f => f.filename));
+  try {
+    const filesOnDisk = fs.readdirSync(UPLOAD_DIR);
+    for (const file of filesOnDisk) {
+      if (file === '.metadata.json' || file === '.metadata.json.tmp' || file.startsWith('.tmp_')) continue;
+      if (!knownFiles.has(file)) {
+        try {
+          fs.unlinkSync(path.join(UPLOAD_DIR, file));
+          console.log(`Orphan file ${file} deleted`);
+        } catch (err) {
+          console.error(`Failed to delete orphan ${file}:`, err.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to scan for orphans:', err.message);
+  }
+}
+
+// Rate limiting: max 10 uploads per hour per IP
+const rateLimitMap = new Map();
+function rateLimitCheck(ip) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + 3600000 });
+    return true;
+  }
+  entry.count++;
+  if (entry.count > 10) return false;
+  return true;
+}
+
+function getClientIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+}
+
+function getCookieString(sessionId) {
+  const secure = IS_PRODUCTION ? '; Secure' : '';
+  return `sessionId=${sessionId}; Path=/; Max-Age=${SESSION_TTL / 1000}; SameSite=Strict; HttpOnly${secure}`;
+}
+
 function serveStaticFile(res, filePath) {
   fs.readFile(filePath, (err, data) => {
     if (err) {
@@ -68,7 +160,7 @@ function serveStaticFile(res, filePath) {
       }
       return;
     }
-    
+
     const contentType = getContentType(filePath);
     res.writeHead(200, { 'Content-Type': contentType });
     res.end(data);
@@ -76,17 +168,16 @@ function serveStaticFile(res, filePath) {
 }
 
 function getSessionId(req) {
-  // Check for session cookie
   const cookies = req.headers.cookie || '';
   const cookiePairs = cookies.split(';');
-  
+
   for (const pair of cookiePairs) {
     const [name, value] = pair.trim().split('=');
     if (name === 'sessionId') {
       return value;
     }
   }
-  
+
   return null;
 }
 
@@ -108,18 +199,16 @@ function streamUploadToDisk(req) {
     if (!m) return reject(new Error('No boundary in Content-Type'));
 
     const boundary = (m[1] || m[2]).trim();
-    // After the body starts the first part header ends with \r\n\r\n,
-    // then file bytes follow until \r\n--<boundary>
     const HEADER_END = Buffer.from('\r\n\r\n');
     const DELIMITER  = Buffer.from('\r\n--' + boundary);
 
     let buf        = Buffer.alloc(0);
-    let state      = 'HEADER'; // → BODY → DONE
+    let state      = 'HEADER';
     let fileName   = null;
     let fileId     = null;
     let uniqueName = null;
     let filePath   = null;
-    let ws         = null;      // write stream
+    let ws         = null;
     let fileSize   = 0;
     let totalIn    = 0;
     let done       = false;
@@ -136,18 +225,15 @@ function streamUploadToDisk(req) {
       if (!ws || done) return;
       const idx = buf.indexOf(DELIMITER);
       if (idx !== -1) {
-        // Found boundary — write up to it and stop
         ws.write(buf.slice(0, idx));
         fileSize += idx;
         buf   = buf.slice(idx);
         state = 'DONE';
       } else if (final) {
-        // End of stream — write remainder minus trailing \r\n (final boundary suffix)
         const end = buf.length >= 2 ? buf.length - 2 : buf.length;
         if (end > 0) { ws.write(buf.slice(0, end)); fileSize += end; }
         buf = Buffer.alloc(0);
       } else {
-        // Keep last DELIMITER.length bytes in buffer (boundary may span chunks)
         const safe = buf.length - DELIMITER.length;
         if (safe > 0) {
           ws.write(buf.slice(0, safe));
@@ -166,19 +252,19 @@ function streamUploadToDisk(req) {
 
       if (state === 'HEADER') {
         const hEnd = buf.indexOf(HEADER_END);
-        if (hEnd === -1) return; // need more data
+        if (hEnd === -1) return;
         const header = buf.slice(0, hEnd).toString();
         const fm = header.match(/filename="([^"]+)"/);
         if (!fm) return fail(new Error('No filename in part headers'));
 
-        fileName   = path.basename(fm[1]);
+        fileName   = sanitizeFilename(path.basename(fm[1]));
         fileId     = generateUniqueId();
         uniqueName = fileId + path.extname(fileName);
         filePath   = path.join(UPLOAD_DIR, uniqueName);
         ws         = fs.createWriteStream(filePath);
         ws.on('error', fail);
 
-        buf   = buf.slice(hEnd + 4); // skip past \r\n\r\n
+        buf   = buf.slice(hEnd + 4);
         state = 'BODY';
       }
 
@@ -201,21 +287,22 @@ function streamUploadToDisk(req) {
 }
 
 // Cleanup expired files (runs every minute)
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
   const now = Date.now();
-  
+  let changed = false;
+
   Object.entries(fileDatabase).forEach(([fileId, metadata]) => {
     if (now > metadata.expiryTime) {
       const filePath = path.join(UPLOAD_DIR, metadata.filename);
-      
+
       try {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
         delete fileDatabase[fileId];
+        changed = true;
         console.log(`Expired file ${metadata.filename} deleted`);
-        
-        // Remove from user session if exists
+
         if (metadata.sessionId && userSessions[metadata.sessionId]) {
           userSessions[metadata.sessionId].files = userSessions[metadata.sessionId].files.filter(id => id !== fileId);
         }
@@ -224,61 +311,73 @@ setInterval(() => {
       }
     }
   });
-  
-  // Clean up old sessions (older than 24 hours)
+
+  // Clean up old sessions (aligned with cookie TTL)
   Object.entries(userSessions).forEach(([sessionId, session]) => {
-    if (now - session.created > 24 * 60 * 60 * 1000 && session.files.length === 0) {
+    if (now - session.created > SESSION_TTL && session.files.length === 0) {
       delete userSessions[sessionId];
+      changed = true;
       console.log(`Expired session ${sessionId} deleted`);
     }
   });
+
+  // Clean expired rate limit entries
+  for (const [ip, entry] of rateLimitMap) {
+    if (now > entry.resetTime) rateLimitMap.delete(ip);
+  }
+
+  if (changed) saveMetadata();
 }, 60000);
 
 // Create HTTP server
-const server = http.createServer((req, res)  => {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  // Handle OPTIONS request for CORS preflight
+const server = http.createServer((req, res) => {
+  // Handle OPTIONS request (no CORS — same-origin only)
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
     return;
   }
-  
-  const url = new URL(req.url, `http://${req.headers.host}`) ;
-  const pathname = url.pathname;
-  
+
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = decodeURIComponent(url.pathname);
+
   // Get or create session
   let sessionId = getSessionId(req);
   if (!sessionId || !userSessions[sessionId]) {
     sessionId = createSession();
-    res.setHeader('Set-Cookie', `sessionId=${sessionId}; Path=/; Max-Age=${7*24*60*60}; SameSite=Strict`);
+    res.setHeader('Set-Cookie', getCookieString(sessionId));
   }
-  
+
   // Serve static files from public directory
   if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
     serveStaticFile(res, path.join(__dirname, 'public', 'index.html'));
     return;
   }
-  
-  // Serve static files from public directory with explicit path
-  if (req.method === 'GET' && !pathname.includes('..')) {
-    const filePath = path.join(__dirname, 'public', pathname);
-    
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      serveStaticFile(res, filePath);
+
+  // Serve static files with path traversal protection
+  if (req.method === 'GET' && !pathname.startsWith('/api/') && !pathname.startsWith('/download/')) {
+    const publicDir = path.resolve(path.join(__dirname, 'public'));
+    const filePath = path.resolve(path.join(__dirname, 'public', pathname));
+
+    if (!filePath.startsWith(publicDir + path.sep) && filePath !== publicDir) {
+      sendResponse(res, 403, { error: 'Forbidden' });
       return;
     }
+
+    try {
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        serveStaticFile(res, filePath);
+        return;
+      }
+    } catch (err) {
+      // stat errors fall through to 404
+    }
   }
-  
+
   // API endpoints
   if (pathname === '/api/files' && req.method === 'GET') {
-    // Get all files for current session
     const sessionFiles = userSessions[sessionId].files
-      .filter(fileId => fileDatabase[fileId]) // Filter out deleted files
+      .filter(fileId => fileDatabase[fileId])
       .map(fileId => {
         const metadata = fileDatabase[fileId];
         return {
@@ -287,17 +386,33 @@ const server = http.createServer((req, res)  => {
           size: metadata.size,
           uploadTime: metadata.uploadTime,
           expiryTime: metadata.expiryTime,
-          downloadLink: `http://${req.headers.host}/download/${metadata.filename}`
+          downloadLink: `/download/${metadata.filename}`
         };
-      }) ;
-    
+      });
+
     sendResponse(res, 200, sessionFiles);
     return;
   }
-  
+
   if (pathname === '/api/upload' && req.method === 'POST') {
+    // Rate limit check
+    const clientIp = getClientIp(req);
+    if (!rateLimitCheck(clientIp)) {
+      sendResponse(res, 429, { error: 'Too many uploads. Try again later.' });
+      return;
+    }
+
     streamUploadToDisk(req)
       .then(({ fileName, fileId, uniqueName, filePath, fileSize }) => {
+        // Session fixation protection: rotate session on first upload
+        if (userSessions[sessionId].files.length === 0) {
+          const oldSession = userSessions[sessionId];
+          delete userSessions[sessionId];
+          sessionId = createSession();
+          userSessions[sessionId].files = oldSession.files;
+          res.setHeader('Set-Cookie', getCookieString(sessionId));
+        }
+
         fileDatabase[fileId] = {
           originalName: fileName,
           filename: uniqueName,
@@ -308,11 +423,12 @@ const server = http.createServer((req, res)  => {
           sessionId: sessionId
         };
         userSessions[sessionId].files.push(fileId);
+        saveMetadata();
 
         sendResponse(res, 200, {
           message: 'File uploaded successfully',
           fileId,
-          downloadLink: `http://${req.headers.host}/download/${uniqueName}`,
+          downloadLink: `/download/${uniqueName}`,
           expiryTime: fileDatabase[fileId].expiryTime
         });
       })
@@ -323,11 +439,9 @@ const server = http.createServer((req, res)  => {
       });
     return;
   }
-  
+
   if (pathname === '/api/reset-session' && req.method === 'POST') {
-    // Reset user session - delete all files and create new session
     if (userSessions[sessionId]) {
-      // Delete all files for this session
       userSessions[sessionId].files.forEach(fileId => {
         if (fileDatabase[fileId]) {
           const filePath = path.join(UPLOAD_DIR, fileDatabase[fileId].filename);
@@ -341,68 +455,95 @@ const server = http.createServer((req, res)  => {
           }
         }
       });
-      
-      // Delete session
+
       delete userSessions[sessionId];
     }
-    
-    // Create new session
+
     const newSessionId = createSession();
-    res.setHeader('Set-Cookie', `sessionId=${newSessionId}; Path=/; Max-Age=${7*24*60*60}; SameSite=Strict`);
-    
+    res.setHeader('Set-Cookie', getCookieString(newSessionId));
+    saveMetadata();
+
     sendResponse(res, 200, { message: 'Session reset successfully' });
     return;
   }
-  
+
   if (pathname.startsWith('/download/') && req.method === 'GET') {
-    // Handle file download
     const filename = pathname.substring('/download/'.length);
-    const fileId = path.basename(filename, path.extname(filename));
+
+    // Block dot-files (e.g. .metadata.json)
+    if (filename.startsWith('.')) {
+      sendResponse(res, 403, { error: 'Forbidden' });
+      return;
+    }
+
     const filePath = path.join(UPLOAD_DIR, filename);
-    
-    // Check if file exists
+
+    // Path traversal protection
+    const safeDir = path.resolve(UPLOAD_DIR) + path.sep;
+    if (!path.resolve(filePath).startsWith(safeDir)) {
+      sendResponse(res, 403, { error: 'Forbidden' });
+      return;
+    }
+
+    const fileId = path.basename(filename, path.extname(filename));
+
     if (!fs.existsSync(filePath) || !fileDatabase[fileId]) {
       sendResponse(res, 404, { error: 'File not found or expired' });
       return;
     }
-    
-    // Set headers for download
-    res.setHeader('Content-Disposition', `attachment; filename="${fileDatabase[fileId].originalName}"`);
+
+    // Safe Content-Disposition header
+    res.setHeader('Content-Disposition', safeContentDisposition(fileDatabase[fileId].originalName));
     res.setHeader('Content-Type', getContentType(filePath));
-    
-    // Stream the file
+
     const fileStream = fs.createReadStream(filePath);
+
+    fileStream.on('error', (err) => {
+      console.error(`Error streaming file ${filename}:`, err);
+      if (!res.headersSent) {
+        sendResponse(res, 500, { error: 'File download failed' });
+      }
+    });
+
     fileStream.pipe(res);
-    
-    // Mark as downloaded and schedule deletion
+
     fileDatabase[fileId].downloaded = true;
-    
-    // Delete file after response is complete
+
+    // Delete file after response (tolerate ENOENT from concurrent downloads)
     res.on('finish', () => {
       try {
         fs.unlinkSync(filePath);
-        
-        // Remove from user session if exists
+      } catch (err) {
+        if (err.code !== 'ENOENT') console.error(`Error deleting file ${filename}:`, err);
+      }
+
+      if (fileDatabase[fileId]) {
         const fileSessionId = fileDatabase[fileId].sessionId;
         if (fileSessionId && userSessions[fileSessionId]) {
           userSessions[fileSessionId].files = userSessions[fileSessionId].files.filter(id => id !== fileId);
         }
-        
         delete fileDatabase[fileId];
-        console.log(`File ${filename} deleted after download`);
-      } catch (err) {
-        console.error(`Error deleting file ${filename}:`, err);
       }
+
+      saveMetadata();
+      console.log(`File ${filename} deleted after download`);
     });
-    
+
     return;
   }
-  
+
   // 404 for everything else
   sendResponse(res, 404, { error: 'Not found' });
 });
 
+// Load metadata and clean orphans on startup
+loadMetadata();
+cleanupOrphans();
+
 // Start the server
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`) ;
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
+
+// Export for testing
+module.exports = { server, cleanupInterval, sanitizeFilename, safeContentDisposition, rateLimitCheck, loadMetadata, saveMetadata, _saveTimeout: () => saveTimeout };

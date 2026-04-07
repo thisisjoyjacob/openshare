@@ -1,5 +1,6 @@
 // Service worker for PWA functionality
-const CACHE_NAME = 'openshare-v1';
+// Bump this version on every deploy to invalidate old caches
+const CACHE_NAME = 'openshare-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -38,41 +39,52 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch event - serve from cache, fall back to network
+// Fetch event - network-first for HTML, cache-first for assets
 self.addEventListener('fetch', event => {
   // Skip non-GET requests and API calls
-  if (event.request.method !== 'GET' || 
+  if (event.request.method !== 'GET' ||
       event.request.url.includes('/api/') ||
       event.request.url.includes('/download/')) {
     return;
   }
-  
+
+  // Network-first for HTML pages (ensures security fixes deploy immediately)
+  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for other assets (CSS, JS, images)
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - return response
         if (response) {
           return response;
         }
-        
-        // Clone the request
+
         const fetchRequest = event.request.clone();
-        
+
         return fetch(fetchRequest).then(
           response => {
-            // Check if valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
+            if(!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
               return response;
             }
-            
-            // Clone the response
+
             const responseToCache = response.clone();
-            
+
             caches.open(CACHE_NAME)
               .then(cache => {
                 cache.put(event.request, responseToCache);
               });
-              
+
             return response;
           }
         );
