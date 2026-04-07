@@ -1,0 +1,7 @@
+{"level":"info","message":"OpenShare server running on 0.0.0.0:3000","service":"openshare","timestamp":"2025-08-01T12:43:54.305Z"}
+{"level":"info","message":"Environment: development","service":"openshare","timestamp":"2025-08-01T12:43:54.307Z"}
+{"level":"info","message":"Upload directory: C:\\Users\\Lenovo1\\Documents\\GitHub\\openshare\\uploads","service":"openshare","timestamp":"2025-08-01T12:43:54.307Z"}
+{"level":"info","message":"Max file size: 1024MB","service":"openshare","timestamp":"2025-08-01T12:43:54.307Z"}
+{"level":"info","message":"File expiry: 4.0 hours","service":"openshare","timestamp":"2025-08-01T12:43:54.307Z"}
+{"level":"info","message":"Upload directory ensured: C:\\Users\\Lenovo1\\Documents\\GitHub\\openshare\\uploads","service":"openshare","timestamp":"2025-08-01T12:43:54.316Z"}
+{"level":"info","message":"SIGINT received, shutting down gracefully","service":"openshare","timestamp":"2025-08-01T12:49:07.267Z"}
